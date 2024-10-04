@@ -1,10 +1,20 @@
-<script setup>
-
-</script>
-
 <template>
-  $END$
+    <h1 class="text-2xl">Home Page</h1>
 </template>
+
+<script>
+export default {
+    name: 'Home',
+    mounted() {
+        document.title = 'Home';
+    },
+    data() {
+        return {
+            user: 'World'
+        }
+    },
+};
+</script>
 
 <style scoped>
 
