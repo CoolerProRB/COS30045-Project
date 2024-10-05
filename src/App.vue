@@ -1,7 +1,7 @@
 <template>
     <NavBar />
 
-    <div class="container mx-auto py-5">
+    <div class="container mx-auto py-5 px-2.5 lg:px-0">
         <router-view></router-view>
     </div>
 </template>

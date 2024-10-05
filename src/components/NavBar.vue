@@ -1,8 +1,9 @@
 <template>
     <nav class="w-full bg-gray-100 dark:bg-gray-950 py-1.5">
         <div class="flex items-center container mx-auto justify-between px-3 lg:px-0">
-            <ul>
-                <li class="mx-2"><router-link to="/">Home</router-link></li>
+            <ul class="flex">
+                <li class="mx-3"><router-link to="/">Home</router-link></li>
+                <li class="mx-3"><router-link to="/test">Test Chart</router-link></li>
             </ul>
 
             <label class="theme-switch">
@@ -30,6 +31,8 @@
 </template>
 
 <script>
+import eventBus from '@/eventBus';
+
 export default {
     data() {
         return {
@@ -46,6 +49,7 @@ export default {
                 document.documentElement.classList.add('dark');
             }
             localStorage.setItem('theme', this.theme);
+            eventBus.emit('themeChanged', this.theme);
         },
     },
 };
@@ -253,5 +257,9 @@ export default {
     -webkit-transform: translateY(-50%);
     -ms-transform: translateY(-50%);
     transform: translateY(-50%);
+}
+.router-link-active{
+    @apply text-gray-500 dark:text-blue-500;
+    @apply font-bold;
 }
 </style>

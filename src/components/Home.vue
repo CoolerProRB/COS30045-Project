@@ -1,5 +1,6 @@
 <template>
-    <h1 class="text-2xl">Home Page</h1>
+    <h1 class="text-3xl">Home Page</h1>
+    <p>Hello, {{ user }}!</p>
 </template>
 
 <script>
@@ -16,6 +17,6 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 
 </style>
