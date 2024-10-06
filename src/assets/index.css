@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 .chart{
-    background-color: lightgrey;
+    @apply bg-white dark:bg-gray-800;
 }
