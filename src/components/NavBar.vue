@@ -1,9 +1,10 @@
 <template>
     <nav class="w-full bg-gray-100 dark:bg-gray-950 py-1.5">
-        <div class="flex items-center container mx-auto justify-between px-3 lg:px-0">
+        <div class="flex items-center w-full md:w-11/12 lg:w-10/12 mx-auto justify-between px-3 lg:px-0">
             <ul class="flex">
                 <li class="mx-3"><router-link to="/">Home</router-link></li>
                 <li class="mx-3"><router-link to="/test">Test Chart</router-link></li>
+                <li class="mx-3"><router-link to="/map">Map Chart</router-link></li>
             </ul>
 
             <label class="theme-switch">

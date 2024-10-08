@@ -1,5 +1,4 @@
 <template>
-    <button id="update-data">Update Data</button>
     <div ref="chart"></div>
 </template>
 
@@ -7,155 +6,98 @@
 import * as d3 from 'd3';
 import eventBus from '@/eventBus';
 
-export default{
+export default {
+    data() {
+        return {
+            theme: localStorage.getItem('theme') || 'light',
+            colors: {
+                light: {
+                    malaysia: '#fc8d62',
+                    australia: '#66c2a5'
+                },
+                dark: {
+                    malaysia: '#ff7f0e',
+                    australia: '#1f77b4'
+                }
+            }
+        }
+    },
     mounted() {
         this.drawChart();
-        document.title = 'Test Chart';
+        document.title = 'Map Chart';
         eventBus.on('themeChanged', this.updateChartColor);
     },
     beforeUnmount() {
         eventBus.off('themeChanged', this.updateChartColor);
     },
     methods: {
-        drawChart(){
-            var dataset = [24,10,29,19,8,15,20,12,9,6,21,28];
-            var numValues = dataset.length;
+        drawChart() {
+            // Set up the SVG canvas dimensions
+            const width = 800;
+            const height = 600;
 
-            // Chart dimensions and padding
-            const margin = {top: 50, right: 20, bottom: 50, left: 50};
-            var w = 500 - margin.left - margin.right;
-            var h = 300 - margin.top - margin.bottom;
+            // Store reference to the Vue instance
+            const _this = this;
 
-            // Define the xScale and yScale
-            var xScale = d3.scaleBand()
-                .domain(d3.range(dataset.length))
-                .range([0, w])
-                .paddingInner(0.05);
-
-            var yScale = d3.scaleLinear()
-                .domain([0, d3.max(dataset)])
-                .range([h, 0]);
-
-            // Create the SVG element
-            var svg = d3.select(this.$refs.chart)
+            // Create an SVG element to draw the map
+            const svg = d3.select(this.$refs.chart)
                 .append("svg")
-                .attr("width", w + margin.left + margin.right)
-                .attr("height", h + margin.top + margin.bottom)
+                .attr("width", width)
+                .attr("height", height);
 
-            let theme = localStorage.getItem('theme') || 'light';
-            let color = theme === 'dark' ? 'white' : 'black';
+            // Set up a projection and path generator
+            const projection = d3.geoMercator()
+                .center([133, -15]) // Adjusted center for better visibility of both countries
+                .scale(400) // Adjust scale for appropriate zoom level
+                .translate([width / 2, height / 2]);
 
-            // Create the initial bars
-            svg.selectAll("rect")
-                .data(dataset)
-                .enter()
-                .append("rect")
-                .attr("x", function(d, i) {
-                    return xScale(i) + 20;
-                })
-                .attr("y", function(d) {
-                    return yScale(d);
-                })
-                .attr("width", xScale.bandwidth())
-                .attr("height", function(d) {
-                    return h - yScale(d);
-                })
-                .attr("fill", color);
+            const path = d3.geoPath().projection(projection);
 
-            // X Axis
-            var xAxis = d3.axisBottom(xScale)
-                .ticks(dataset.length);
+            // Load GeoJSON data for the world
+            d3.json("/COS30045-Project/data/geo.json").then((data) => {
+                if (!data || !data.features) {
+                    console.error("Invalid GeoJSON data");
+                    return;
+                }
+                // Filter data to include only Australia and Malaysia
+                const countries = data.features.filter((d) => {
+                    return d.properties.name === "Australia" || d.properties.name === "Malaysia";
+                });
 
-            svg.selectAll("text")
-                .data(dataset)
-                .enter()
-                .append("text")
-                .attr("x", function (d, i) {
-                    return xScale(i) + xScale.bandwidth() / 3 + 20;
-                })
-                .attr("y", function (d) {
-                    return yScale(d) + 15;
-                })
-                .attr("class", "label")
-                .attr("font-size", "12px")
-                .attr("fill", color === 'black' ? 'white' : 'black')
-                .text(function (d) {
-                    return d;
-                })
-
-            // Append the X axis
-            svg.append("g")
-                .attr("transform", "translate(20," + h + ")") // Position it at the bottom
-                .attr("fill", color)
-                .call(xAxis);
-
-            var yAxis = d3.axisLeft(yScale);
-
-            // Append the Y axis
-            svg.append("g")
-                .attr("transform", "translate(" + 20 + ",0)")
-                .attr("fill", color)
-                .call(yAxis);
-
-
-            // Button click event to update data
-            d3.select("#update-data").on("click", function() {
-                // Generate new random dataset
-                dataset = [];
-                for (var i = 0; i < numValues; i++) {
-                    var newNumber = Math.floor(Math.random() * 25);
-                    dataset.push(newNumber);
+                if (countries.length === 0) {
+                    console.error("No data found for Australia or Malaysia");
+                    return;
                 }
 
-                // Update xScale to reflect new dataset
-                xScale.domain(d3.range(dataset.length));
-
-                // Update yScale to reflect new dataset
-                yScale.domain([0, d3.max(dataset)]);
-
-                svg.selectAll("rect")
-                    .data(dataset)
-                    .attr("y", function (d) {
-                        return yScale(d);
+                // Draw the countries
+                svg.selectAll(".country")
+                    .data(countries)
+                    .enter()
+                    .append("path")
+                    .attr("class", "country")
+                    .attr("d", path)
+                    .style("fill", (d) => {
+                        return d.properties.name === "Australia" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
                     })
-                    .attr("height", function (d) {
-                        return h - yScale(d);
+                    .on("mouseover", function (event, d) {
+                        d3.select(this).style("fill", "red");
+                    })
+                    .on("mouseout", function (event, d) {
+                        // Use the stored reference to the Vue instance to get the color
+                        const color = d.properties.name === "Australia" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
+                        d3.select(this).style("fill", color);
                     });
-
-                svg.selectAll("text")
-                    .data(dataset)
-                    .text(function (d) {
-                        return d;
-                    })
-                    .attr("class", "label")
-                    .attr("x", function (d, i) {
-                        return xScale(i) + xScale.bandwidth() / 3 + 20;
-                    })
-                    .attr("y", function (d) {
-                        return yScale(d) + 15;
-                    })
+            }).catch((error) => {
+                console.error("Error loading the GeoJSON data: ", error);
             });
         },
         updateChartColor() {
             let theme = localStorage.getItem('theme') || 'light';
+            this.theme = theme;
             let color = theme === 'dark' ? 'white' : 'black';
-
-            const svg = d3.select(this.$refs.chart).select('svg');
-
-            svg.selectAll('rect')
-                .transition()
-                .duration(200)
-                .attr('fill', color);
-
-            svg.selectAll('text')
-                .transition()
-                .duration(200)
-                .attr('fill', color);
-
-            svg.selectAll('.label')
-                .transition()
-                .duration(200)
-                .attr('fill', color === 'black' ? 'white' : 'black');
+            d3.selectAll(".country").style("fill", (d) => {
+                return d.properties.name === "Australia" ? this.colors[this.theme].australia : this.colors[this.theme].malaysia;
+            });
         }
     }
 }
