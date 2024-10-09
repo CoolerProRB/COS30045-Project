@@ -43,7 +43,7 @@
             </div>
         </div>
     </nav>
-    <div id="mobileNav" class="items-center sticky top-14  md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <div id="mobileNav" class="items-center sticky top-14 hidden md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <ul>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/" @click.native="toggleMenu">Home</router-link></li>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/test" @click.native="toggleMenu">Test Chart</router-link></li>
