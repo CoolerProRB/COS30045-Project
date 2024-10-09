@@ -48,7 +48,7 @@ export default {
             // Set up a projection and path generator
             const projection = d3.geoMercator()
                 .center([133, -15]) // Adjusted center for better visibility of both countries
-                .scale(400) // Adjust scale for appropriate zoom level
+                .scale(200) // Adjust scale for appropriate zoom level
                 .translate([width / 2, height / 2]);
 
             const path = d3.geoPath().projection(projection);
@@ -61,7 +61,7 @@ export default {
                 }
                 // Filter data to include only Australia and Malaysia
                 const countries = data.features.filter((d) => {
-                    return d.properties.name === "Australia" || d.properties.name === "Malaysia";
+                    return d.properties.name === "Australia" || d.properties.name === "Malaysia" || d.properties.name === "China";
                 });
 
                 if (countries.length === 0) {
