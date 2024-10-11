@@ -121,12 +121,7 @@ export default {
     name: 'Home',
     mounted() {
         document.title = 'Home';
-    },
-    data() {
-        return {
-            user: 'World'
-        }
-    },
+    }
 };
 </script>
 

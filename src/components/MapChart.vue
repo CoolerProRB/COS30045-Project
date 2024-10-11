@@ -1,5 +1,7 @@
 <template>
-    <div ref="chart"></div>
+    <div class="mx-auto w-full">
+        <div ref="chart"></div>
+    </div>
 </template>
 
 <script>
@@ -32,9 +34,14 @@ export default {
     },
     methods: {
         drawChart() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
             // Set up the SVG canvas dimensions
-            const width = 800;
-            const height = 600;
+            const width = screenWidth * 0.9;
+            const height = 1000;
+
+            const countryList = ["Singapore", "Malaysia", "Australia"];
 
             // Store reference to the Vue instance
             const _this = this;
@@ -48,7 +55,7 @@ export default {
             // Set up a projection and path generator
             const projection = d3.geoMercator()
                 .center([133, -15]) // Adjusted center for better visibility of both countries
-                .scale(200) // Adjust scale for appropriate zoom level
+                .scale(500) // Adjust scale for appropriate zoom level
                 .translate([width / 2, height / 2]);
 
             const path = d3.geoPath().projection(projection);
@@ -61,7 +68,7 @@ export default {
                 }
                 // Filter data to include only Australia and Malaysia
                 const countries = data.features.filter((d) => {
-                    return d.properties.name === "Australia" || d.properties.name === "Malaysia" || d.properties.name === "China";
+                    return countryList.includes(d.properties.name);
                 });
 
                 if (countries.length === 0) {
@@ -77,16 +84,31 @@ export default {
                     .attr("class", "country")
                     .attr("d", path)
                     .style("fill", (d) => {
-                        return d.properties.name === "Australia" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
+                        return d.properties.name === "Singapore" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
                     })
                     .on("mouseover", function (event, d) {
+                        // Change fill color
                         d3.select(this).style("fill", "red");
+
+                        // Add country label
+                        svg.append("text")
+                            .attr("class", "country-label")
+                            .attr("x", path.centroid(d)[0])
+                            .attr("y", path.centroid(d)[1])
+                            .text(d.properties.name)
+                            .style("fill", "white")
+                            .style("font-size", "12px")
+                            .attr("text-anchor", "middle");
                     })
                     .on("mouseout", function (event, d) {
                         // Use the stored reference to the Vue instance to get the color
                         const color = d.properties.name === "Australia" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
                         d3.select(this).style("fill", color);
+
+                        // Remove country label
+                        svg.selectAll(".country-label").remove();
                     });
+
             }).catch((error) => {
                 console.error("Error loading the GeoJSON data: ", error);
             });
