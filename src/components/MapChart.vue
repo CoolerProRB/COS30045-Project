@@ -1,12 +1,13 @@
 <template>
-    <div class="mx-auto w-full">
-        <div ref="chart"></div>
+    <div class="mx-auto my-5 w-11/12" style="height: 500px;">
+        <div ref="chart" class="flex justify-center items-center"></div>
     </div>
 </template>
 
 <script>
 import * as d3 from 'd3';
 import eventBus from '@/eventBus';
+import $ from 'jquery';
 
 export default {
     data() {
@@ -15,11 +16,13 @@ export default {
             colors: {
                 light: {
                     malaysia: '#fc8d62',
-                    australia: '#66c2a5'
+                    australia: '#66c2a5',
+                    singapore: '#8da0cb'
                 },
                 dark: {
                     malaysia: '#ff7f0e',
-                    australia: '#1f77b4'
+                    australia: '#1f77b4',
+                    singapore: '#9467bd'
                 }
             }
         }
@@ -34,14 +37,11 @@ export default {
     },
     methods: {
         drawChart() {
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
-
             // Set up the SVG canvas dimensions
-            const width = screenWidth * 0.9;
-            const height = 1000;
+            const width = $(".w-11\\/12").width();
+            const height = 500;
 
-            const countryList = ["Singapore", "Malaysia", "Australia"];
+            const countryList = ["Singapore", "Malaysia", "Australia", "Indonesia", "Philippines", "Thailand", "Vietnam", "Myanmar", "Cambodia", "Laos", "Brunei", "China"];
 
             // Store reference to the Vue instance
             const _this = this;
@@ -51,14 +51,6 @@ export default {
                 .append("svg")
                 .attr("width", width)
                 .attr("height", height);
-
-            // Set up a projection and path generator
-            const projection = d3.geoMercator()
-                .center([133, -15]) // Adjusted center for better visibility of both countries
-                .scale(500) // Adjust scale for appropriate zoom level
-                .translate([width / 2, height / 2]);
-
-            const path = d3.geoPath().projection(projection);
 
             // Load GeoJSON data for the world
             d3.json("/COS30045-Project/data/geo.json").then((data) => {
@@ -76,6 +68,11 @@ export default {
                     return;
                 }
 
+                const projection = d3.geoMercator()
+                    .fitSize([width, height], { type: "FeatureCollection", features: countries });
+
+                const path = d3.geoPath().projection(projection);
+
                 // Draw the countries
                 svg.selectAll(".country")
                     .data(countries)
@@ -83,8 +80,11 @@ export default {
                     .append("path")
                     .attr("class", "country")
                     .attr("d", path)
+                    .attr("id", (d) => {
+                        return d.properties.name.toLowerCase().replaceAll(" ", "_");
+                    })
                     .style("fill", (d) => {
-                        return d.properties.name === "Singapore" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
+                        return _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(" ", "_")];
                     })
                     .on("mouseover", function (event, d) {
                         // Change fill color
@@ -102,7 +102,7 @@ export default {
                     })
                     .on("mouseout", function (event, d) {
                         // Use the stored reference to the Vue instance to get the color
-                        const color = d.properties.name === "Australia" ? _this.colors[_this.theme].australia : _this.colors[_this.theme].malaysia;
+                        const color = _this.colors[_this.theme][d.properties.name.toLowerCase()];
                         d3.select(this).style("fill", color);
 
                         // Remove country label
@@ -110,15 +110,17 @@ export default {
                     });
 
             }).catch((error) => {
-                console.error("Error loading the GeoJSON data: ", error);
+                alert("Error loading the GeoJSON data: " + error);
             });
         },
         updateChartColor() {
+            const _this = this;
+
             let theme = localStorage.getItem('theme') || 'light';
             this.theme = theme;
             let color = theme === 'dark' ? 'white' : 'black';
             d3.selectAll(".country").style("fill", (d) => {
-                return d.properties.name === "Australia" ? this.colors[this.theme].australia : this.colors[this.theme].malaysia;
+                return _this.colors[_this.theme][d.properties.name.toLowerCase()];
             });
         }
     }

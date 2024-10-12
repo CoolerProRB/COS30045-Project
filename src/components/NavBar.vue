@@ -2,7 +2,7 @@
     <nav class="bg-white dark:bg-gray-900 flex h-14 sticky top-0 px-10 border-b border-gray-200 dark:border-gray-800">
         <div class="flex items-center w-full justify-between lg:px-0">
             <div>
-                <span class="text-lg font-bold">Cancer Data Viz</span>
+                <span class="text-lg font-bold">Analysis of Respiratory Cancer</span>
             </div>
 
             <div class="items-center hidden md:flex">
