@@ -11,7 +11,9 @@ import eventBus from '@/eventBus';
 export default{
     data() {
         return {
-            isTransitioning: false
+            isTransitioning: false,
+            currentData: null,
+            previousDataStack: []
         };
     },
     mounted() {
@@ -107,6 +109,8 @@ export default{
             const width = 800 - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
 
+            d3.select(this.$refs.chart).selectAll("svg").remove(); // Remove existing SVG to avoid stacking old elements
+
             const svg = d3.select(this.$refs.chart)
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
@@ -114,8 +118,7 @@ export default{
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            let currentData = data;
-            let previousDataStack = [];
+            this.currentData = data;
             const vm = this;
 
             function drawChart(data) {
@@ -140,35 +143,42 @@ export default{
                     .attr("class", "x-axis")
                     .attr("transform", `translate(0, ${height})`)
                     .transition()
-                    .duration(750)
-                    .call(d3.axisBottom(x));
+                    .duration(500)
+                    .call(d3.axisBottom(x))
+                    .on("end", () => {
+                        vm.isTransitioning = false;
+                    });
 
                 svg.append("g")
                     .attr("class", "y-axis")
                     .transition()
-                    .duration(750)
-                    .call(d3.axisLeft(y));
+                    .duration(500)
+                    .call(d3.axisLeft(y))
+                    .on("end", () => {
+                        vm.isTransitioning = false;
+                    });
 
                 // Bind data to bars
-                const bars = svg.selectAll(".bar")
+                let bars = svg.selectAll(".bar")
                     .data(data, d => d.name);
 
-                // Remove old bars and wait for them to disappear
+                // Remove old bars and wait for them to disappear before drawing new bars
                 bars.exit()
                     .transition()
-                    .duration(750)
+                    .duration(500)
                     .attr("y", height)
                     .attr("height", 0)
                     .remove()
-                    .on("end", () => {
-                        // After old bars are removed, draw new bars
-                        drawNewBars(data);
+                    .on("end", function() {
+                        // Redraw chart after old bars are completely removed
+                        bars = svg.selectAll(".bar").data(data, d => d.name);
+                        drawNewBars(bars, data);
                     });
 
-                function drawNewBars(data) {
+                function drawNewBars(bars, data) {
                     // Update existing bars
                     bars.transition()
-                        .duration(750)
+                        .duration(500)
                         .attr("x", d => x(d.name))
                         .attr("y", d => y(d.value))
                         .attr("width", x.bandwidth())
@@ -186,9 +196,10 @@ export default{
                         .on("click", function (event, d) {
                             if (!vm.isTransitioning && d.children) {
                                 event.stopPropagation();
-                                previousDataStack.push(currentData);
-                                currentData = d.children;
-                                drawChart(currentData);
+                                vm.previousDataStack.push(vm.currentData);
+                                vm.currentData = d.children;
+                                vm.isTransitioning = true;
+                                drawChart(vm.currentData);
                             } else {
                                 event.stopPropagation();
                             }
@@ -204,7 +215,7 @@ export default{
                             }
                         })
                         .transition()
-                        .duration(750)
+                        .duration(500)
                         .attr("y", d => y(d.value))
                         .attr("height", d => height - y(d.value))
                         .on("end", () => {
@@ -214,18 +225,19 @@ export default{
 
                 // If no bars need to be removed, draw new bars immediately
                 if (bars.exit().empty()) {
-                    drawNewBars(data);
+                    drawNewBars(bars, data);
                 }
             }
 
             this.handleEmptySpaceClick = () => {
-                if (!this.isTransitioning && previousDataStack.length > 0) {
-                    currentData = previousDataStack.pop();
-                    drawChart(currentData);
+                if (!this.isTransitioning && this.previousDataStack.length > 0) {
+                    this.currentData = this.previousDataStack.pop();
+                    this.isTransitioning = true;
+                    drawChart(this.currentData);
                 }
             };
 
-            drawChart(currentData);
+            drawChart(this.currentData);
         },
         updateChartColor() {
             let theme = localStorage.getItem('theme') || 'light';
