@@ -1,6 +1,6 @@
 <template>
     <div class="mx-auto my-5 w-11/12 flex justify-center" @click="handleEmptySpaceClick">
-        <div ref="chart"></div>
+        <div ref="chart" class="bg-gray-100 dark:bg-gray-700"></div>
     </div>
 </template>
 
@@ -9,6 +9,11 @@ import * as d3 from 'd3';
 import eventBus from '@/eventBus';
 
 export default{
+    data() {
+        return {
+            isTransitioning: false
+        };
+    },
     mounted() {
         this.drawChart();
         document.title = 'Test Chart';
@@ -111,6 +116,7 @@ export default{
 
             let currentData = data;
             let previousDataStack = [];
+            const vm = this;
 
             function drawChart(data) {
                 const x = d3.scaleBand()
@@ -122,6 +128,9 @@ export default{
                     .domain([0, d3.max(data, d => d.value)])
                     .nice()
                     .range([height, 0]);
+
+                // Prevent interactions during transitions
+                vm.isTransitioning = true;
 
                 // Update axes with transitions
                 svg.selectAll(".x-axis").remove();
@@ -144,47 +153,73 @@ export default{
                 const bars = svg.selectAll(".bar")
                     .data(data, d => d.name);
 
-                // Remove old bars
+                // Remove old bars and wait for them to disappear
                 bars.exit()
                     .transition()
                     .duration(750)
                     .attr("y", height)
                     .attr("height", 0)
-                    .remove();
+                    .remove()
+                    .on("end", () => {
+                        // After old bars are removed, draw new bars
+                        drawNewBars(data);
+                    });
 
-                // Update existing bars
-                bars.transition()
-                    .duration(750)
-                    .attr("x", d => x(d.name))
-                    .attr("y", d => y(d.value))
-                    .attr("width", x.bandwidth())
-                    .attr("height", d => height - y(d.value));
+                function drawNewBars(data) {
+                    // Update existing bars
+                    bars.transition()
+                        .duration(750)
+                        .attr("x", d => x(d.name))
+                        .attr("y", d => y(d.value))
+                        .attr("width", x.bandwidth())
+                        .attr("height", d => height - y(d.value));
 
-                // Add new bars
-                bars.enter()
-                    .append("rect")
-                    .attr("class", "bar")
-                    .attr("x", d => x(d.name))
-                    .attr("y", height)
-                    .attr("width", x.bandwidth())
-                    .attr("height", 0)
-                    .attr("fill", "steelblue")
-                    .on("click", function (event, d) {
-                        event.stopPropagation();
-                        if (d.children) {
-                            previousDataStack.push(currentData);
-                            currentData = d.children;
-                            drawChart(currentData);
-                        }
-                    })
-                    .transition()
-                    .duration(750)
-                    .attr("y", d => y(d.value))
-                    .attr("height", d => height - y(d.value));
+                    // Add new bars
+                    bars.enter()
+                        .append("rect")
+                        .attr("class", "bar")
+                        .attr("x", d => x(d.name))
+                        .attr("y", height)
+                        .attr("width", x.bandwidth())
+                        .attr("height", 0)
+                        .attr("fill", d => d.children ? "steelblue" : "slategray")
+                        .on("click", function (event, d) {
+                            if (!vm.isTransitioning && d.children) {
+                                event.stopPropagation();
+                                previousDataStack.push(currentData);
+                                currentData = d.children;
+                                drawChart(currentData);
+                            } else {
+                                event.stopPropagation();
+                            }
+                        })
+                        .on("mouseover", function (event, d) {
+                            if (d.children) {
+                                d3.select(this).attr("fill", "lightsteelblue");
+                            }
+                        })
+                        .on("mouseout", function (event, d) {
+                            if (d.children) {
+                                d3.select(this).attr("fill", "steelblue");
+                            }
+                        })
+                        .transition()
+                        .duration(750)
+                        .attr("y", d => y(d.value))
+                        .attr("height", d => height - y(d.value))
+                        .on("end", () => {
+                            vm.isTransitioning = false;
+                        });
+                }
+
+                // If no bars need to be removed, draw new bars immediately
+                if (bars.exit().empty()) {
+                    drawNewBars(data);
+                }
             }
 
             this.handleEmptySpaceClick = () => {
-                if (previousDataStack.length > 0) {
+                if (!this.isTransitioning && previousDataStack.length > 0) {
                     currentData = previousDataStack.pop();
                     drawChart(currentData);
                 }
