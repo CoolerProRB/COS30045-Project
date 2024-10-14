@@ -6,9 +6,11 @@ import Home from './components/Home.vue'
 import TestChart from './components/TestChart.vue'
 import MapChart from "@/components/MapChart.vue";
 import './assets/index.css'
+import ZoomChart from "@/components/ZoomChart.vue";
 
 const routes = [
     { path: '/', component: Home },
+    { path: '/zoom', component: ZoomChart },
     { path: '/test', component: TestChart },
     { path: '/map', component: MapChart },
     { path: '/:pathMatch(.*)*', redirect: '/' },

@@ -1,19 +1,32 @@
 <template>
     <div class="mx-auto my-5 w-11/12 flex justify-center" @click="handleEmptySpaceClick">
-        <div ref="chart" class="bg-gray-100 dark:bg-gray-700"></div>
+        <div ref="chart" class="bg-gray-100 dark:bg-gray-700 cursor-pointer"></div>
     </div>
 </template>
 
 <script>
 import * as d3 from 'd3';
 import eventBus from '@/eventBus';
+import $ from 'jquery';
 
 export default{
     data() {
         return {
             isTransitioning: false,
             currentData: null,
-            previousDataStack: []
+            previousDataStack: [],
+            colors: {
+                light: {
+                    bar_with_child: 'steelblue',
+                    bar_without_child: 'slategray',
+                    hover: 'lightsteelblue'
+                },
+                dark: {
+                    bar_with_child: '#1c1c5d',
+                    bar_without_child: 'slategray',
+                    hover: '#25256b'
+                }
+            }
         };
     },
     mounted() {
@@ -97,7 +110,14 @@ export default{
                             value: 60,
                             children: [
                                 { name: "Subcategory 5-1-1", value: 30 },
-                                { name: "Subcategory 5-1-2", value: 30 }
+                                {
+                                    name: "Subcategory 5-1-2",
+                                    value: 30,
+                                    children: [
+                                        { name: "Subcategory 5-1-2-1", value: 15 },
+                                        { name: "Subcategory 5-1-2-2", value: 15 }
+                                    ]
+                                }
                             ]
                         },
                         { name: "Subcategory 5-2", value: 50 }
@@ -105,8 +125,22 @@ export default{
                 }
             ];
 
+            let widthPercentage = 1;
+
+            if (window.innerWidth < 768) {
+                widthPercentage = 0.9;
+            } else if (window.innerWidth < 1024) {
+                widthPercentage = 0.8;
+            } else if (window.innerWidth < 1280) {
+                widthPercentage = 0.7;
+            } else if (window.innerWidth < 1536) {
+                widthPercentage = 0.6;
+            } else {
+                widthPercentage = 0.5;
+            }
+
             const margin = { top: 20, right: 20, bottom: 30, left: 40 };
-            const width = 800 - margin.left - margin.right;
+            const width = $(".w-11\\/12").width() * widthPercentage - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
 
             d3.select(this.$refs.chart).selectAll("svg").remove(); // Remove existing SVG to avoid stacking old elements
@@ -192,7 +226,8 @@ export default{
                         .attr("y", height)
                         .attr("width", x.bandwidth())
                         .attr("height", 0)
-                        .attr("fill", d => d.children ? "steelblue" : "slategray")
+                        .attr("fill", d => d.children ? vm.colors[localStorage.getItem('theme')].bar_with_child : vm.colors[localStorage.getItem('theme')].bar_without_child)
+                        .style("cursor", d => d.children ? "pointer" : "default")
                         .on("click", function (event, d) {
                             if (!vm.isTransitioning && d.children) {
                                 event.stopPropagation();
@@ -206,12 +241,12 @@ export default{
                         })
                         .on("mouseover", function (event, d) {
                             if (d.children) {
-                                d3.select(this).attr("fill", "lightsteelblue");
+                                d3.select(this).attr("fill", vm.colors[localStorage.getItem('theme')].hover);
                             }
                         })
                         .on("mouseout", function (event, d) {
                             if (d.children) {
-                                d3.select(this).attr("fill", "steelblue");
+                                d3.select(this).attr("fill", d => d.children ? vm.colors[localStorage.getItem('theme')].bar_with_child : vm.colors[localStorage.getItem('theme')].bar_without_child);
                             }
                         })
                         .transition()
@@ -248,7 +283,7 @@ export default{
             svg.selectAll('rect')
                 .transition()
                 .duration(200)
-                .attr('fill', color);
+                .attr('fill', d => d.children ? this.colors[theme].bar_with_child : this.colors[theme].bar_without_child);
 
             svg.selectAll('text')
                 .transition()
@@ -258,7 +293,7 @@ export default{
             svg.selectAll('.label')
                 .transition()
                 .duration(200)
-                .attr('fill', color === 'black' ? 'white' : 'black');
+                .attr('fill', color);
         }
     }
 }
