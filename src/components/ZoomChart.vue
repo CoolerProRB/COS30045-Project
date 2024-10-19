@@ -1,29 +1,28 @@
 <template>
-    <div ref="chartContainer" class="chart-container"></div>
+    <div class="mx-auto my-5 w-11/12 flex justify-center">
+        <div ref="chartContainer" class="chart-container"></div>
+    </div>
 </template>
 
 <script>
 import * as d3 from 'd3';
+import $ from 'jquery';
 
 export default {
     name: 'ZoomableAreaChart',
     data() {
+        let data = [];
+
+        for (let i = 0; i < 12; i++) {
+            for (let j = 1; j <= 29; j++) {
+                data.push({
+                    date: new Date(2000, i, j),
+                    value: Math.floor(Math.random() * 500)
+                });
+            }
+        }
         return {
-            data: [
-                { date: new Date(2000, 0, 1), value: 150 },
-                { date: new Date(2000, 0, 20), value: 160 },
-                { date: new Date(2000, 1, 1), value: 200 },
-                { date: new Date(2000, 2, 1), value: 170 },
-                { date: new Date(2000, 3, 1), value: 240 },
-                { date: new Date(2000, 4, 1), value: 300 },
-                { date: new Date(2000, 5, 1), value: 250 },
-                { date: new Date(2000, 6, 1), value: 280 },
-                { date: new Date(2000, 7, 1), value: 350 },
-                { date: new Date(2000, 8, 1), value: 400 },
-                { date: new Date(2000, 9, 1), value: 380 },
-                { date: new Date(2000, 10, 1), value: 450 },
-                { date: new Date(2000, 11, 1), value: 500 }
-            ]
+            data: data
         };
     },
     mounted() {
@@ -37,7 +36,7 @@ export default {
             const data = this.data;
 
             // Set up chart dimensions
-            const width = 928;
+            const width = $(".w-11\\/12").width();
             const height = 500;
             const marginTop = 20;
             const marginRight = 20;
