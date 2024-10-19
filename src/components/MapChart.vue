@@ -41,7 +41,7 @@ export default {
             const width = $(".w-11\\/12").width();
             const height = 500;
 
-            const countryList = ["Singapore", "Malaysia", "Australia", "Indonesia", "Philippines", "Thailand", "Vietnam", "Myanmar", "Cambodia", "Laos", "Brunei", "China"];
+            const countryList = ["South Korea", "Japan", "Germany", "United Kingdom", "United States of America", "France"];
 
             // Store reference to the Vue instance
             const _this = this;
