@@ -4,7 +4,7 @@
             <div class="flex flex-col items-center space-y-4 text-center">
                 <div class="space-y-2">
                     <h1 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                        Cancer Data Visualization
+                        Analysis of Respiratory Cancer
                     </h1>
                     <p class="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
                         Explore and understand cancer statistics through interactive visualizations. Our platform
