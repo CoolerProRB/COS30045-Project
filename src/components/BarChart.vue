@@ -31,7 +31,7 @@ export default{
     },
     mounted() {
         this.drawChart();
-        document.title = 'Test Chart';
+        document.title = 'Bar Chart';
         eventBus.on('themeChanged', this.updateChartColor);
     },
     beforeUnmount() {
