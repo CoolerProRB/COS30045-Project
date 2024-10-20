@@ -62,8 +62,7 @@ export default {
                     .select(".domain").remove()
 
                 // Build color scale
-                const myColor = d3.scaleSequential()
-                    .interpolator(d3.interpolateInferno)
+                const myColor = d3.scaleSequential(d3.interpolateBlues)
                     .domain([1,100])
 
                 // create a tooltip
