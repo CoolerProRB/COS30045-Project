@@ -1,6 +1,6 @@
 <template>
     <div class="mx-auto my-5 w-11/12 flex justify-center">
-        <div ref="chart" id="chart" class="bg-gray-100 dark:bg-gray-700 cursor-pointer"></div>
+        <div ref="chart" id="chart" class="bg-gray-100 dark:bg-gray-700"></div>
     </div>
 </template>
 
@@ -114,6 +114,7 @@ export default {
                     .style("stroke-width", 4)
                     .style("stroke", "none")
                     .style("opacity", 0.8)
+                    .style("cursor", "pointer")
                     .on("mouseover", mouseover)
                     .on("mousemove", mousemove)
                     .on("mouseleave", mouseleave)
