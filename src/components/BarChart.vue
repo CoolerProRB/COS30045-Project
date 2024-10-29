@@ -26,11 +26,77 @@ export default{
                     bar_without_child: 'slategray',
                     hover: '#25256b'
                 }
-            }
+            },
+            data: null
         };
     },
     mounted() {
-        this.drawChart();
+        d3.csv("data/WHO_CANCER_CASE_LINE_BAR.csv").then((data) => {
+            // Group data by country, then by year, then by cancer label, and finally by sex
+            let groupedData = d3.group(
+                data,
+                d => d["Country label"],
+                d => d["Year"],
+                d => d["Cancer label"],
+                d => d["Sex"]
+            );
+
+            // Helper function to create the desired data structure
+            function buildHierarchicalData(groupedData) {
+                let result = [];
+
+                for (let [countryLabel, yearData] of groupedData) {
+                    let countryTotalCount = 0;
+                    let countryChildren = [];
+
+                    for (let [year, cancerData] of yearData) {
+                        let yearTotalCount = 0;
+                        let yearChildren = [];
+
+                        for (let [cancerLabel, sexData] of cancerData) {
+                            let sexTotalCount = 0;
+                            let sexChildren = [];
+
+                            for (let [sex, d] of sexData) {
+                                let total = parseInt(d[0].Total);
+                                sexTotalCount += total;
+                                sexChildren.push({
+                                    name: sex,
+                                    value: total
+                                });
+                            }
+
+                            yearTotalCount += sexTotalCount;
+                            yearChildren.push({
+                                name: cancerLabel,
+                                value: sexTotalCount,
+                                children: sexChildren
+                            });
+                        }
+
+                        countryTotalCount += yearTotalCount;
+                        countryChildren.push({
+                            name: year,
+                            value: yearTotalCount,
+                            children: yearChildren
+                        });
+                    }
+
+                    result.push({
+                        name: countryLabel,
+                        value: countryTotalCount,
+                        children: countryChildren
+                    });
+                }
+
+                return result;
+            }
+
+            let hierarchicalData = buildHierarchicalData(groupedData);
+
+            this.data = hierarchicalData;
+            this.drawChart();
+        });
         document.title = 'Bar Chart';
         eventBus.on('themeChanged', this.updateChartColor);
     },
@@ -38,93 +104,7 @@ export default{
         eventBus.off('themeChanged', this.updateChartColor);
     },
     methods: {
-        drawChart(){
-            // Sample hierarchical data
-            const data = [
-                {
-                    name: "Category 1",
-                    value: 100,
-                    children: [
-                        {
-                            name: "Subcategory 1-1",
-                            value: 40,
-                            children: [
-                                { name: "Subcategory 1-1-1", value: 20 },
-                                { name: "Subcategory 1-1-2", value: 20 }
-                            ]
-                        },
-                        { name: "Subcategory 1-2", value: 60 }
-                    ]
-                },
-                {
-                    name: "Category 2",
-                    value: 80,
-                    children: [
-                        {
-                            name: "Subcategory 2-1",
-                            value: 50,
-                            children: [
-                                { name: "Subcategory 2-1-1", value: 25 },
-                                { name: "Subcategory 2-1-2", value: 25 }
-                            ]
-                        },
-                        { name: "Subcategory 2-2", value: 30 }
-                    ]
-                },
-                {
-                    name: "Category 3",
-                    value: 120,
-                    children: [
-                        {
-                            name: "Subcategory 3-1",
-                            value: 70,
-                            children: [
-                                { name: "Subcategory 3-1-1", value: 35 },
-                                { name: "Subcategory 3-1-2", value: 35 }
-                            ]
-                        },
-                        {
-                            name: "Subcategory 3-2",
-                            value: 50,
-                            children: [
-                                { name: "Subcategory 3-2-1", value: 25 },
-                                { name: "Subcategory 3-2-2", value: 25 }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: "Category 4",
-                    value: 90,
-                    children: [
-                        { name: "Subcategory 4-1", value: 45 },
-                        { name: "Subcategory 4-2", value: 45 }
-                    ]
-                },
-                {
-                    name: "Category 5",
-                    value: 110,
-                    children: [
-                        {
-                            name: "Subcategory 5-1",
-                            value: 60,
-                            children: [
-                                { name: "Subcategory 5-1-1", value: 30 },
-                                {
-                                    name: "Subcategory 5-1-2",
-                                    value: 30,
-                                    children: [
-                                        { name: "Subcategory 5-1-2-1", value: 15 },
-                                        { name: "Subcategory 5-1-2-2", value: 15 }
-                                    ]
-                                }
-                            ]
-                        },
-                        { name: "Subcategory 5-2", value: 50 }
-                    ]
-                }
-            ];
-
+        drawChart() {
             let widthPercentage = 1;
 
             if (window.innerWidth < 768) {
@@ -139,21 +119,39 @@ export default{
                 widthPercentage = 0.5;
             }
 
-            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            const margin = { top: 20, right: 20, bottom: 70, left: 70 }; // Increased bottom margin to accommodate labels
             const width = $(".w-11\\/12").width() * widthPercentage - margin.left - margin.right;
-            const height = 400 - margin.top - margin.bottom;
+            const height = 600 - margin.top - margin.bottom;
 
-            d3.select(this.$refs.chart).selectAll("svg").remove(); // Remove existing SVG to avoid stacking old elements
+            d3.select(this.$refs.chart).selectAll("svg").remove();
 
             const svg = d3.select(this.$refs.chart)
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
+                .on("click", this.handleEmptySpaceClick) // Add click handler to SVG
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            this.currentData = data;
+            // Add a group for the label
+            const labelGroup = svg.append("g")
+                .attr("transform", `translate(${width / 2}, ${height + 50})`); // Position below x-axis
+
+            // Add the label text element
+            const layerLabel = labelGroup.append("text")
+                .attr("class", "layer-label")
+                .attr("text-anchor", "middle")
+                .attr("fill", function () {
+                    return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
+                })
+                .style("font-size", "14px")
+                .text("Total cancer cases of each country"); // Initial label text
+
+            this.currentData = this.data;
             const vm = this;
+
+            // Initialize currentPath to keep track of navigation
+            this.currentPath = [];
 
             function drawChart(data) {
                 const x = d3.scaleBand()
@@ -166,10 +164,8 @@ export default{
                     .nice()
                     .range([height, 0]);
 
-                // Prevent interactions during transitions
                 vm.isTransitioning = true;
 
-                // Update axes with transitions
                 svg.selectAll(".x-axis").remove();
                 svg.selectAll(".y-axis").remove();
 
@@ -179,9 +175,11 @@ export default{
                     .transition()
                     .duration(500)
                     .call(d3.axisBottom(x))
-                    .on("end", () => {
-                        vm.isTransitioning = false;
-                    });
+                    .selectAll("text")
+                    .attr("y", 10) // Adjust the y-position of the labels
+                    .attr("x", 0)
+                    .attr("transform", "rotate(0)") // Rotate the labels to 0 degrees
+                    .style("text-anchor", "center"); // Center the labels under the bars
 
                 svg.append("g")
                     .attr("class", "y-axis")
@@ -192,11 +190,9 @@ export default{
                         vm.isTransitioning = false;
                     });
 
-                // Bind data to bars
                 let bars = svg.selectAll(".bar")
                     .data(data, d => d.name);
 
-                // Remove old bars and wait for them to disappear before drawing new bars
                 bars.exit()
                     .transition()
                     .duration(500)
@@ -204,13 +200,11 @@ export default{
                     .attr("height", 0)
                     .remove()
                     .on("end", function() {
-                        // Redraw chart after old bars are completely removed
                         bars = svg.selectAll(".bar").data(data, d => d.name);
                         drawNewBars(bars, data);
                     });
 
                 function drawNewBars(bars, data) {
-                    // Update existing bars
                     bars.transition()
                         .duration(500)
                         .attr("x", d => x(d.name))
@@ -218,7 +212,6 @@ export default{
                         .attr("width", x.bandwidth())
                         .attr("height", d => height - y(d.value));
 
-                    // Add new bars
                     bars.enter()
                         .append("rect")
                         .attr("class", "bar")
@@ -231,8 +224,10 @@ export default{
                         .on("click", function (event, d) {
                             if (!vm.isTransitioning && d.children) {
                                 event.stopPropagation();
-                                vm.previousDataStack.push(vm.currentData);
+                                // Push current state onto the stack, including currentPath
+                                vm.previousDataStack.push({ data: vm.currentData, path: [...vm.currentPath] });
                                 vm.currentData = d.children;
+                                vm.currentPath.push(d); // Add the clicked node to currentPath
                                 vm.isTransitioning = true;
                                 drawChart(vm.currentData);
                             } else {
@@ -258,15 +253,41 @@ export default{
                         });
                 }
 
-                // If no bars need to be removed, draw new bars immediately
                 if (bars.exit().empty()) {
                     drawNewBars(bars, data);
                 }
+
+                // Update the label text based on the current path
+                layerLabel.text(getLabelText(vm.currentPath));
             }
 
-            this.handleEmptySpaceClick = () => {
-                if (!this.isTransitioning && this.previousDataStack.length > 0) {
-                    this.currentData = this.previousDataStack.pop();
+            // Function to construct the label text based on currentPath
+            function getLabelText(path) {
+                if (path.length === 0) {
+                    return "Total cancer cases of each country";
+                } else if (path.length === 1) {
+                    // First drill-down level: Country selected
+                    return `Yearly Cancer Cases in ${path[0].name}`;
+                } else if (path.length === 2) {
+                    // Second drill-down level: Year selected
+                    return `Total Cancer Cases for each type in ${path[0].name} (${path[1].name})`;
+                } else if (path.length === 3) {
+                    // Third drill-down level: Cancer type selected
+                    return `Cancer Cases by Gender for ${path[2].name} in ${path[0].name} (${path[1].name})`;
+                } else {
+                    // Further drill-down levels (if any)
+                    return `Data for ${path.map(p => p.name).join(' > ')}`;
+                }
+            }
+
+            // Initialize previousDataStack to store both data and path
+            this.previousDataStack = [];
+
+            this.handleEmptySpaceClick = (e) => {
+                if (!this.isTransitioning && this.previousDataStack.length > 0 && e.srcElement.nodeName === 'svg') {
+                    const previousState = this.previousDataStack.pop();
+                    this.currentData = previousState.data;
+                    this.currentPath = previousState.path;
                     this.isTransitioning = true;
                     drawChart(this.currentData);
                 }
