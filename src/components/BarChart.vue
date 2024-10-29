@@ -205,6 +205,16 @@ export default{
                     });
 
                 function drawNewBars(bars, data) {
+                    const tooltip = d3.select("body").append("div")
+                        .attr("id", "tooltip")
+                        .style("position", "absolute")
+                        .style("opacity", 0)
+                        .style("background", "lightsteelblue")
+                        .style("padding", "8px")
+                        .style("border-radius", "4px")
+                        .style("pointer-events", "none");
+
+
                     bars.transition()
                         .duration(500)
                         .attr("x", d => x(d.name))
@@ -235,11 +245,26 @@ export default{
                             }
                         })
                         .on("mouseover", function (event, d) {
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", 0.9);
+                            tooltip.html(`Value: ${d.value}`)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 28) + "px");
+
                             if (d.children) {
                                 d3.select(this).attr("fill", vm.colors[localStorage.getItem('theme')].hover);
                             }
                         })
+                        .on("mousemove", function (event) {
+                            tooltip.style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 28) + "px");
+                        })
                         .on("mouseout", function (event, d) {
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", 0);
+
                             if (d.children) {
                                 d3.select(this).attr("fill", d => d.children ? vm.colors[localStorage.getItem('theme')].bar_with_child : vm.colors[localStorage.getItem('theme')].bar_without_child);
                             }
