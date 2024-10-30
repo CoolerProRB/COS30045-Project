@@ -1,6 +1,6 @@
 <template>
     <div class="mx-auto my-5 w-11/12 flex justify-center" @click="handleEmptySpaceClick">
-        <div ref="chart" class="bg-gray-100 dark:bg-gray-700 cursor-pointer"></div>
+        <div ref="chart" class="cursor-pointer"></div>
     </div>
 </template>
 

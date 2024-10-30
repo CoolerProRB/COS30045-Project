@@ -9,7 +9,7 @@
                 <ul class="flex pe-5">
                     <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/">Home</router-link></li>
                     <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/bar">Bar Chart</router-link></li>
-                    <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/stacked-area">Stacked Area Chart</router-link></li>
+                    <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/stacked-bar">Stacked Bar Chart</router-link></li>
                     <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/line">Line Chart</router-link></li>
                     <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/heatmap">Heatmap</router-link></li>
                     <li class="mx-3 text-sm font-medium hover:underline underline-offset-4"><router-link to="/map">Map Chart</router-link></li>
@@ -50,7 +50,7 @@
         <ul>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/" @click.native="toggleMenu">Home</router-link></li>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/bar" @click.native="toggleMenu">Bar Chart</router-link></li>
-            <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/stacked-area" @click.native="toggleMenu">Stacked Area Chart</router-link></li>
+            <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/stacked-bar" @click.native="toggleMenu">Stacked Bar Chart</router-link></li>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/line" @click.native="toggleMenu">Line Chart</router-link></li>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/heatmap" @click.native="toggleMenu">Heatmap</router-link></li>
             <li class="py-3 px-10 border-b border-gray-200 dark:border-gray-700 text-sm font-medium hover:underline underline-offset-4"><router-link to="/map" @click.native="toggleMenu">Map Chart</router-link></li>
