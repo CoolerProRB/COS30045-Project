@@ -53,8 +53,7 @@ export default {
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
-                .attr("transform",
-                    `translate(${margin.left}, ${margin.top})`);
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
             // Create a tooltip div
             const tooltip = d3.select(this.$refs.chart)
@@ -144,50 +143,68 @@ export default {
                 const y = d3.scaleLinear()
                     .domain([0, yMax])
                     .range([height, 0]);
+
                 svg.append("g")
                     .call(d3.axisLeft(y));
+
 
                 // Define the color palette
                 const color = d3.scaleOrdinal()
                     .domain(mysubgroups)
                     .range(d3.schemeCategory10);
 
-                // Show the bars
-                svg.append("g")
-                    .selectAll("g")
-                    .data(stackedData)
-                    .enter().append("g")
-                    .attr("fill", function(d) { return color(d.key); })
-                    .selectAll("rect")
-                    .data(function(d) { return d; })
-                    .enter().append("rect")
-                    .attr("x", function(d) { return x(d.data.country); })
-                    .attr("y", function(d) { return y(d[1]); })
-                    .attr("height", function(d) { return y(d[0]) - y(d[1]); })
-                    .attr("width", x.bandwidth())
-                    .attr("stroke-width", "2")
-                    // Add event listeners for tooltip
-                    .on("mouseover", function(event, d) {
-                        tooltip.style("opacity", 0.9);
-                        d3.select(this).style("stroke", function () {
-                            return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
-                        });
-                    })
-                    .on("mousemove", function(event, d) {
-                        const country = d.data.country;
-                        const year = d3.select(this.parentNode).datum().key;
-                        const value = d.data[year];
+                // Show the bars with transition
+                const barsGroup = svg.append("g");
 
-                        tooltip.html(`<strong>Country:</strong> ${country}<br>
-                      <strong>Year:</strong> ${year}<br>
-                      <strong>Value:</strong> ${value}`)
-                            .style("left", (event.pageX + 10) + "px") // Adjust tooltip position
-                            .style("top", (event.pageY - 28) + "px");
-                    })
-                    .on("mouseout", function() {
-                        tooltip.style("opacity", 0);
-                        d3.select(this).style("stroke", "none");
-                    });
+                function updateBars() {
+                    // Bind data to groups and enter new groups
+                    const groups = barsGroup.selectAll("g")
+                        .data(stackedData);
+
+                    const groupsEnter = groups.enter().append("g")
+                        .attr("fill", function(d) { return color(d.key); });
+
+                    groupsEnter.selectAll("rect")
+                        .data(function(d) { return d; })
+                        .enter().append("rect")
+                        .attr("x", function(d) { return x(d.data.country); })
+                        .attr("y", height) // Start from bottom for transition effect
+                        .attr("height", 0) // Start with height 0 for transition effect
+                        .attr("width", x.bandwidth())
+                        .on("mouseover", function(event, d) {
+                            tooltip.style("opacity", 0.9);
+                            d3.select(this).style("stroke", function () {
+                                return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
+                            });
+                        })
+                        .on("mousemove", function(event, d) {
+                            const country = d.data.country;
+                            const year = d3.select(this.parentNode).datum().key;
+                            const value = d.data[year];
+
+                            tooltip.html(`<strong>Country:</strong> ${country}<br>
+                       <strong>Year:</strong> ${year}<br>
+                       <strong>Value:</strong> ${value}`)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function() {
+                            tooltip.style("opacity", 0);
+                            d3.select(this).style("stroke", "none");
+                        });
+
+                    // Update existing bars with transition
+                    groupsEnter.merge(groups).selectAll("rect")
+                        .transition()
+                        .duration(750)
+                        .attr("y", function(d) { return y(d[1]); })
+                        .attr("height", function(d) { return y(d[0]) - y(d[1]); });
+
+                    // Remove old bars that are no longer needed
+                    groups.exit().remove();
+                }
+
+                updateBars();
             });
         },
         updateChartColor() {

@@ -1,6 +1,14 @@
 <template>
     <div class="mx-auto my-5 w-11/12 flex justify-center">
-        <div ref="chart" class="bg-gray-100 dark:bg-gray-700"></div>
+        <label for="sexFilter">Filter by Gender:</label>
+        <select id="sexFilter" @change="filterBySex" class="dark:bg-gray-700 bg-gray-100 ms-3">
+            <option value="All">All</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
+    </div>
+    <div class="mx-auto my-5 w-11/12 flex justify-center">
+        <div ref="chart"></div>
     </div>
 </template>
 
@@ -20,12 +28,12 @@ export default {
     },
     methods:{
         drawChart(){
-            // set the dimensions and margins of the graph
-            var margin = {top: 10, right: 30, bottom: 30, left: 60},
+            // Set the dimensions and margins of the graph
+            var margin = {top: 10, right: 150, bottom: 50, left: 70},
                 width = $(".w-11\\/12").width() - margin.left - margin.right,
                 height = 400 - margin.top - margin.bottom;
 
-            // append the svg object to the body of the page
+            // Append the SVG object to the chart container
             var svg = d3.select(this.$refs.chart)
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
@@ -34,44 +42,263 @@ export default {
                 .attr("transform",
                     "translate(" + margin.left + "," + margin.top + ")");
 
-            //Read the data
-            d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered_comma.csv",
-
-                // When reading the csv, I must format variables:
-                function(d){
-                    return { date : d3.timeParse("%Y-%m-%d")(d.date), value : d.value }
-                }).then(
-
-                // Now I can use this dataset:
-                function(data) {
-
-                    // Add X axis --> it is a date format
-                    const x = d3.scaleTime()
-                        .domain(d3.extent(data, function(d) { return d.date; }))
-                        .range([ 0, width ]);
-                    svg.append("g")
-                        .attr("transform", `translate(0, ${height})`)
-                        .call(d3.axisBottom(x));
-
-                    // Add Y axis
-                    const y = d3.scaleLinear()
-                        .domain([0, d3.max(data, function(d) { return +d.value; })])
-                        .range([ height, 0 ]);
-                    svg.append("g")
-                        .call(d3.axisLeft(y));
-
-                    // Add the line
-                    svg.append("path")
-                        .datum(data)
-                        .attr("fill", "none")
-                        .attr("stroke", "steelblue")
-                        .attr("stroke-width", 1.5)
-                        .attr("d", d3.line()
-                            .x(function(d) { return x(d.date) })
-                            .y(function(d) { return y(d.value) })
-                        )
-
+            // Create a tooltip div that is hidden by default
+            var tooltip = d3.select(this.$refs.chart)
+                .append("div")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("background-color", function () {
+                    return localStorage.getItem('theme') !== 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
                 })
+                .style("color", function () {
+                    return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
+                })
+                .style("border", "solid 1px #ccc")
+                .style("padding", "5px")
+                .style("pointer-events", "none");
+
+            // Read the data
+            d3.csv("data/WHO_CANCER_CASE_LINE_BAR.csv").then(function(data) {
+                // Parse Year and Total as numbers
+                data.forEach(function(d) {
+                    d.Year = +d.Year;
+                    d.Total = +d.Total;
+                });
+
+                const selectedSex = document.getElementById('sexFilter').value;
+                if (selectedSex !== "All") {
+                    data = data.filter(d => d.Sex === selectedSex);
+                }
+
+                // Group data by Country and Year, summing up the Total
+                var nestedData = d3.rollup(
+                    data,
+                    v => d3.sum(v, d => d.Total),
+                    d => d['Country label'],
+                    d => d.Year
+                );
+
+                // Prepare data for plotting
+                var countries = Array.from(nestedData.keys());
+                var dataReady = countries.map(function(country) {
+                    var countryData = nestedData.get(country);
+                    var years = Array.from(countryData.keys()).sort();
+                    var values = years.map(function(year) {
+                        return { year: year, value: countryData.get(year), country: country };
+                    });
+                    return { country: country, values: values };
+                });
+
+                // Set up scales
+                var allYears = data.map(d => d.Year);
+                var x = d3.scaleLinear()
+                    .domain(d3.extent(allYears))
+                    .range([0, width]);
+
+                var maxTotal = d3.max(dataReady, function(c) {
+                    return d3.max(c.values, function(d) { return d.value; });
+                });
+
+                var y = d3.scaleLinear()
+                    .domain([0, maxTotal])
+                    .range([height, 0]);
+
+                // Add X axis
+                svg.append("g")
+                    .attr("transform", `translate(0, ${height})`)
+                    .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+                // Add Y axis
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                // Add X axis label
+                svg.append("text")
+                    .attr("text-anchor", "middle")
+                    .attr("x", width / 2)
+                    .attr("y", height + margin.bottom - 10)
+                    .text("Total Respiratory Cancer for each country per 100000 person (2000-2012)")
+                    .style("font-size", "14px")
+                    .attr("fill", function() {
+                        return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
+                    });
+
+                // Optional: Add Y axis label
+                svg.append("text")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -height / 2)
+                    .attr("y", -margin.left + 20)
+                    .text("Number of Cases per 100,000 People")
+                    .style("font-size", "14px").attr("fill", function() {
+                        return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
+                    });
+
+                // Define color scale
+                var color = d3.scaleOrdinal()
+                    .domain(countries)
+                    .range(d3.schemeCategory10);
+
+                // Draw the lines
+                var line = d3.line()
+                    .x(function(d) { return x(d.year); })
+                    .y(function(d) { return y(d.value); });
+
+                svg.selectAll(".line")
+                    .data(dataReady)
+                    .enter()
+                    .append("path")
+                    .attr("class", "line")
+                    .attr("fill", "none")
+                    .attr("stroke", function(d){ return color(d.country); })
+                    .attr("stroke-width", 1.5)
+                    .attr("d", function(d){
+                        return line(d.values);
+                    });
+
+                // Add the points
+                svg.selectAll("myDots")
+                    .data(dataReady)
+                    .enter()
+                    .append('g')
+                    .style("fill", function(d){ return color(d.country); })
+                    .selectAll("myPoints")
+                    .data(function(d){ return d.values })
+                    .enter()
+                    .append("circle")
+                    .attr("cx", function(d) { return x(d.year); })
+                    .attr("cy", function(d) { return y(d.value); })
+                    .attr("r", 4)
+                    .attr("stroke", "white")
+                    .on("mouseover", function(event, d) {
+                        tooltip
+                            .style("opacity", 1)
+                            .html("<strong>Country:</strong> " + d.country + "<br/>" +
+                                "<strong>Year:</strong> " + d.year + "<br/>" +
+                                "<strong>Total:</strong> " + d.value)
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mousemove", function(event, d) {
+                        tooltip
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function(event, d) {
+                        tooltip
+                            .style("opacity", 0);
+                    });
+
+                // Optional: Add legend
+                svg.selectAll(".legend")
+                    .data(countries)
+                    .enter()
+                    .append("text")
+                    .attr("x", width + 40)
+                    .attr("y", function(d, i) { return 15 + i * 20; })
+                    .text(function(d) { return d; })
+                    .style("fill", function(d) { return color(d); })
+                    .style("font-size", "12px")
+                    .attr("alignment-baseline","middle");
+            });
+        },
+        filterBySex() {
+            const selectedSex = document.getElementById('sexFilter').value;
+
+            // Read the data again and filter by the selected gender
+            d3.csv("data/WHO_CANCER_CASE_LINE_BAR.csv").then((data) => {
+                data.forEach(function(d) {
+                    d.Year = +d.Year;
+                    d.Total = +d.Total;
+                });
+
+                if (selectedSex !== "All") {
+                    data = data.filter(d => d.Sex === selectedSex);
+                }
+
+                // Group data by Country and Year, summing up the Total
+                var nestedData = d3.rollup(
+                    data,
+                    v => d3.sum(v, d => d.Total),
+                    d => d['Country label'],
+                    d => d.Year
+                );
+
+                // Prepare data for plotting
+                var countries = Array.from(nestedData.keys());
+                var dataReady = countries.map(function(country) {
+                    var countryData = nestedData.get(country);
+                    var years = Array.from(countryData.keys()).sort();
+                    var values = years.map(function(year) {
+                        return { year: year, value: countryData.get(year), country: country };
+                    });
+                    return { country: country, values: values };
+                });
+
+                // Update scales if needed
+                var allYears = data.map(d => d.Year);
+                var x = d3.scaleLinear()
+                    .domain(d3.extent(allYears))
+                    .range([0, $(".w-11\\/12").width() - 220]);
+
+                var maxTotal = d3.max(dataReady, function(c) {
+                    return d3.max(c.values, function(d) { return d.value; });
+                });
+
+                var y = d3.scaleLinear()
+                    .domain([0, maxTotal])
+                    .range([400 - 60, 0]);
+
+                // Select the SVG group for lines and dots
+                var svg = d3.select(this.$refs.chart).select('svg').select('g');
+
+                // Define the line generator
+                var line = d3.line()
+                    .x(function(d) { return x(d.year); })
+                    .y(function(d) { return y(d.value); });
+
+                // Update lines with transition
+                svg.selectAll(".line")
+                    .data(dataReady)
+                    .join(
+                        enter => enter.append("path")
+                            .attr("class", "line")
+                            .attr("fill", "none")
+                            .attr("stroke", function(d){ return d3.scaleOrdinal().domain(countries).range(d3.schemeCategory10)(d.country); })
+                            .attr("stroke-width", 1.5)
+                            .attr("d", d => line(d.values))
+                            .style("opacity", 0)
+                            .transition()
+                            .duration(1000)
+                            .style("opacity", 1),
+                        update => update
+                            .transition()
+                            .duration(1000)
+                            .attr("d", d => line(d.values))
+                    );
+
+                // Update the points with transition
+                const dots = svg.selectAll("circle")
+                    .data(dataReady.flatMap(d => d.values));
+
+                dots.join(
+                    enter => enter.append("circle")
+                        .attr("r", 4)
+                        .attr("fill", d => d3.scaleOrdinal().domain(countries).range(d3.schemeCategory10)(d.country))
+                        .attr("cx", d => x(d.year))
+                        .attr("cy", d => y(d.value))
+                        .style("opacity", 0)
+                        .transition()
+                        .duration(1000)
+                        .style("opacity", 1),
+                    update => update
+                        .transition()
+                        .duration(1000)
+                        .attr("cx", d => x(d.year))
+                        .attr("cy", d => y(d.value))
+                );
+            });
         },
         updateChartColor() {
             let theme = localStorage.getItem('theme') || 'light';

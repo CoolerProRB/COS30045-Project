@@ -145,7 +145,7 @@ export default{
                     return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
                 })
                 .style("font-size", "14px")
-                .text("Total cancer cases of each country"); // Initial label text
+                .text("Total cancer cases of each country (2000 - 2012)"); // Initial label text
 
             this.currentData = this.data;
             const vm = this;
@@ -289,7 +289,7 @@ export default{
             // Function to construct the label text based on currentPath
             function getLabelText(path) {
                 if (path.length === 0) {
-                    return "Total cancer cases of each country";
+                    return "Total cancer cases of each country (2000 - 2012)";
                 } else if (path.length === 1) {
                     // First drill-down level: Country selected
                     return `Yearly Cancer Cases in ${path[0].name}`;
