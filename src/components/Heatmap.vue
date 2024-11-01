@@ -75,7 +75,7 @@ export default {
 
             // Initialize color scale
             this.myColor = d3.scaleSequential(d3.interpolateBlues)
-                .domain([1, 100]);
+                .domain([0, 100]);
 
             // Initialize tooltip
             this.tooltip = d3.select("body")
@@ -97,6 +97,18 @@ export default {
                 height = 450 - margin.top - margin.bottom;
 
             d3.csv("data/WHOMortality_HEAT_MAP.csv").then(data => {
+                let largest = 0;
+
+                data.forEach(d => {
+                    if (d.Sex === this.selectedSex){
+                        d.Number = +d.Number;
+                        if (d.Number > largest) {
+                            largest = d.Number;
+                        }
+                    }
+
+                });
+
                 // Filter data based on selected sex
                 const filteredData = data.filter(d =>
                     d.Sex === this.selectedSex
@@ -162,7 +174,7 @@ export default {
                     .attr("y", d => this.y(d.Year))
                     .attr("width", this.x.bandwidth())
                     .attr("height", this.y.bandwidth())
-                    .style("fill", d => this.myColor(+d["Death rate per 100 000 population"]))
+                    .style("fill", d => this.myColor(+d.Number / largest * 100))
                     .style("opacity", 0.8);
 
                 // Add event listeners
