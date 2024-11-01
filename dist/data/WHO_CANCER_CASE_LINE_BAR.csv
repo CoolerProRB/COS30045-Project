@@ -25,6 +25,9 @@ Cancer label,Country label,Sex,Year,Total
 "Lip,  oral cavity and pharynx ",France,female,2010,323
 "Lip,  oral cavity and pharynx ",France,female,2011,348
 "Lip,  oral cavity and pharynx ",France,female,2012,383
+"Lip,  oral cavity and pharynx ",Germany,male,2000,0
+"Lip,  oral cavity and pharynx ",Germany,male,2001,0
+"Lip,  oral cavity and pharynx ",Germany,male,2002,0
 "Lip,  oral cavity and pharynx ",Germany,male,2003,730
 "Lip,  oral cavity and pharynx ",Germany,male,2004,781
 "Lip,  oral cavity and pharynx ",Germany,male,2005,754
@@ -35,6 +38,9 @@ Cancer label,Country label,Sex,Year,Total
 "Lip,  oral cavity and pharynx ",Germany,male,2010,782
 "Lip,  oral cavity and pharynx ",Germany,male,2011,818
 "Lip,  oral cavity and pharynx ",Germany,male,2012,813
+"Lip,  oral cavity and pharynx ",Germany,female,2000,0
+"Lip,  oral cavity and pharynx ",Germany,female,2001,0
+"Lip,  oral cavity and pharynx ",Germany,female,2002,0
 "Lip,  oral cavity and pharynx ",Germany,female,2003,334
 "Lip,  oral cavity and pharynx ",Germany,female,2004,336
 "Lip,  oral cavity and pharynx ",Germany,female,2005,296
