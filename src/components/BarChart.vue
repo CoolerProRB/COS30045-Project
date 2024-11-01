@@ -1,5 +1,22 @@
 <template>
-    <div class="mx-auto my-5 w-11/12 flex justify-center" @click="handleEmptySpaceClick">
+    <div class="w-full text-center">
+        <h1 class="text-5xl">Behind the Numbers: Unveiling Types and Faces of Respiratory Cancer</h1>
+    </div>
+    <div class="w-6/12 mx-auto my-3 text-center">
+        <p>
+            Dive deeper into the mosaic of respiratory cancer with our hierarchical bar chart, where each layer reveals more about the disease's intricate patterns.
+            Imagine peeling back the layers to uncover the various types of respiratory cancer, the years they surged, the countries most affected, and the genders most impacted.
+            This detailed exploration brings to life the diversity within the statistics, showing how different cancer types manifest across populations and geographies. As you interact
+            with the chart, you'll uncover stories of disparity and resilience, gaining a nuanced understanding of who is most vulnerable and why.
+        </p>
+    </div>
+    <div class="mx-auto my-5 w-9/12 dark:bg-gray-800 dark:border-gray-600 border py-3" @click="handleEmptySpaceClick">
+        <div class="text-center pb-3 border-b dark:border-gray-500">
+            <p class="font-bold">Hierarchical Breakdown of Respiratory Cancer Incidence</p>
+        </div>
+        <div class="mx-auto my-5 w-9/12 flex justify-center">
+            <p class="text-gray-400 text-sm">(Press blue bar for detailed information, press blank area to exit.)</p>
+        </div>
         <div ref="chart" class="cursor-pointer"></div>
     </div>
 </template>
@@ -120,7 +137,7 @@ export default{
             }
 
             const margin = { top: 20, right: 20, bottom: 70, left: 70 }; // Increased bottom margin to accommodate labels
-            const width = $(".w-11\\/12").width() * widthPercentage - margin.left - margin.right;
+            const width = $(".w-9\\/12").width() - margin.left - margin.right;
             const height = 600 - margin.top - margin.bottom;
 
             d3.select(this.$refs.chart).selectAll("svg").remove();
@@ -209,7 +226,7 @@ export default{
                         .attr("id", "tooltip")
                         .style("position", "absolute")
                         .style("opacity", 0)
-                        .style("background", "lightsteelblue")
+                        .attr("class", "text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-2 rounded")
                         .style("padding", "8px")
                         .style("border-radius", "4px")
                         .style("pointer-events", "none");

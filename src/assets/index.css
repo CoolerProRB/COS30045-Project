@@ -4,6 +4,7 @@
 
 *{
     font-family: Arial;
+    scroll-behavior: smooth;
 }
 .chart{
     @apply bg-white dark:bg-gray-800;

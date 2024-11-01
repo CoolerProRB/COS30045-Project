@@ -1,13 +1,27 @@
 <template>
-    <div class="mx-auto my-5 w-11/12 flex justify-center items-center">
-        <span class="pe-2">Gender: </span>
-        <select v-model="selectedSex" class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
-            <option value="Total">All</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
+    <div class="w-full text-center">
+        <h1 class="text-5xl">Turning Points: Comparing Respiratory Cancer Incidence in Pivotal Years</h1>
     </div>
-    <div class="mx-auto my-5 w-11/12 flex justify-center">
+    <div class="w-6/12 mx-auto my-3 text-center">
+        <p>
+            Every few years, significant events reshape the landscape of health and disease. Our stacked bar chart highlights four pivotal years—2000, 2002, 2008, and 2012—offering a
+            comparative lens on how respiratory cancer incidence has shifted within these snapshots. Picture each bar as a storybook page, segmented by cancer type, narrating the changes
+            and continuities across six countries. These key years serve as milestones, marking moments of triumph, struggle, and transformation. By comparing these snapshots, we gain insights
+            into the effectiveness of interventions, the emergence of new risks, and the resilience of populations in the face of respiratory cancer.
+        </p>
+    </div>
+    <div class="mx-auto my-5 w-9/12 dark:bg-gray-700 dark:border-gray-500 border">
+        <div class="text-center py-2 border-b dark:border-gray-500">
+            <p class="font-bold">Stacked Bar Chart of Respiratory Cancer Incidence (2000, 2002, 2008, 2012)</p>
+        </div>
+        <div class="mx-auto my-5 w-9/12 flex justify-center items-center">
+            <span class="pe-2">Gender: </span>
+            <select v-model="selectedSex" class="bg-gray-100 dark:bg-gray-600 px-3 py-1 rounded">
+                <option value="Total">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
         <div ref="chart"></div>
     </div>
 </template>
@@ -44,7 +58,7 @@ export default {
 
             // Set the dimensions and margins of the graph
             const margin = { top: 10, right: 30, bottom: 60, left: 60 },
-                width = $(".w-11\\/12").width() - margin.left - margin.right,
+                width = $(".w-9\\/12").width() - margin.left - margin.right,
                 height = 400 - margin.top - margin.bottom;
 
             // Append the SVG object to the body of the page
@@ -151,7 +165,7 @@ export default {
                 // Define the color palette
                 const color = d3.scaleOrdinal()
                     .domain(mysubgroups)
-                    .range(d3.schemeCategory10);
+                    .range(d3.schemeTableau10);
 
                 // Show the bars with transition
                 const barsGroup = svg.append("g");

@@ -1,13 +1,26 @@
 <template>
-    <div class="mx-auto my-5 w-11/12 flex justify-center">
-        <label for="sexFilter">Filter by Gender:</label>
-        <select id="sexFilter" @change="filterBySex" class="dark:bg-gray-700 bg-gray-100 ms-3">
-            <option value="All">All</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-        </select>
+    <div class="w-full text-center">
+        <h1 class="text-5xl">Riding the Waves: The Rise and Fall of Respiratory Cancer Over Time</h1>
     </div>
-    <div class="mx-auto my-5 w-11/12 flex justify-center">
+    <div class="w-6/12 mx-auto my-3 text-center">
+        <p>
+            ime marches on, and so does the story of respiratory cancer. Imagine a timeline stretching from 2000 to 2012, where each year brings new chapters of hope and concern.
+            Our line chart chronicles the ebb and flow of incidence rates across six countries, revealing trends that speak volumes about public health efforts, societal changes,
+            and emerging risks. Watch as lines ascend and descend, reflecting the successes and setbacks in the fight against this formidable foe. This temporal journey not only highlights the progress made but also underscores the ongoing challenges that lie ahead.
+        </p>
+    </div>
+    <div class="mx-auto my-5 w-9/12 dark:bg-gray-800 dark:border-gray-600 border py-3">
+        <div class="text-center pb-3 border-b dark:border-gray-500">
+            <p class="font-bold">Worldwide Respiratory Cancer Incidence Map (2000-2012)</p>
+        </div>
+        <div class="mx-auto my-5 w-9/12 flex justify-center">
+            <label for="sexFilter">Filter by Gender:</label>
+            <select id="sexFilter" @change="filterBySex" class="dark:bg-gray-700 bg-gray-100 ms-3">
+                <option value="All">All</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
         <div ref="chart"></div>
     </div>
 </template>
@@ -30,7 +43,7 @@ export default {
         drawChart(){
             // Set the dimensions and margins of the graph
             var margin = {top: 10, right: 150, bottom: 50, left: 70},
-                width = $(".w-11\\/12").width() - margin.left - margin.right,
+                width = $(".w-9\\/12").width() - margin.left - margin.right,
                 height = 400 - margin.top - margin.bottom;
 
             // Append the SVG object to the chart container
@@ -169,7 +182,7 @@ export default {
                     .append("circle")
                     .attr("cx", function(d) { return x(d.year); })
                     .attr("cy", function(d) { return y(d.value); })
-                    .attr("r", 4)
+                    .attr("r", 5)
                     .attr("stroke", "white")
                     .on("mouseover", function(event, d) {
                         tooltip
@@ -201,6 +214,16 @@ export default {
                     .style("fill", function(d) { return color(d); })
                     .style("font-size", "12px")
                     .attr("alignment-baseline","middle");
+
+                svg.selectAll(".legend-rect")
+                    .data(countries)
+                    .enter()
+                    .append("rect")
+                    .attr("x", width + 20)
+                    .attr("y", function(d, i) { return i * 20 + 8; })
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .style("fill", function(d) { return color(d); });
             });
         },
         filterBySex() {
@@ -240,7 +263,7 @@ export default {
                 var allYears = data.map(d => d.Year);
                 var x = d3.scaleLinear()
                     .domain(d3.extent(allYears))
-                    .range([0, $(".w-11\\/12").width() - 220]);
+                    .range([0, $(".w-9\\/12").width() - 220]);
 
                 var maxTotal = d3.max(dataReady, function(c) {
                     return d3.max(c.values, function(d) { return d.value; });
@@ -284,7 +307,7 @@ export default {
 
                 dots.join(
                     enter => enter.append("circle")
-                        .attr("r", 4)
+                        .attr("r", 5)
                         .attr("fill", d => d3.scaleOrdinal().domain(countries).range(d3.schemeCategory10)(d.country))
                         .attr("cx", d => x(d.year))
                         .attr("cy", d => y(d.value))
