@@ -33,7 +33,7 @@
     </section>
 
     <section class="w-full py-12 md:py-24 lg:py-12 bg-gray-100 dark:bg-gray-800">
-        <Heatmap />
+        <RacingChart />
     </section>
 
     <section class="w-full py-12 md:py-24 lg:py-12">
@@ -51,15 +51,18 @@ import LineChart from "@/components/LineChart.vue";
 import Heatmap from "@/components/Heatmap.vue";
 import BarChart from "@/components/BarChart.vue";
 import StackedBarChart from "@/components/StackedBarChart.vue";
+import ScatterPlot from "@/components/ScatterPlot.vue";
+import RacingChart from "@/components/RacingChart.vue";
 
 export default {
     name: 'Home',
     components: {
         MapChart,
         LineChart,
-        Heatmap,
+        ScatterPlot,
         BarChart,
-        StackedBarChart
+        StackedBarChart,
+        RacingChart
     },
     mounted() {
         document.title = 'Home';
