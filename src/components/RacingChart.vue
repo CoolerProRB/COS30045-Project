@@ -293,10 +293,6 @@ export default {
 </script>
 
 <style>
-.bar {
-    stroke-width: 1;
-    stroke: #ccc;
-}
 .tooltip {
     position: absolute;
     text-align: left;
