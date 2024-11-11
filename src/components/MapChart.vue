@@ -11,7 +11,7 @@
     </div>
     <div class="mx-auto my-5 w-9/12 dark:bg-gray-700 dark:border-gray-500 border py-1" style="min-height: 500px;">
         <div class="text-center py-2 border-b dark:border-gray-500">
-            <p class="font-bold">Worldwide Respiratory Cancer Incidence Map (2000-2012)</p>
+            <p class="font-bold">Worldwide Respiratory Cancer Incidence Globe (2000-2012)</p>
         </div>
         <div ref="legend" class="flex justify-center items-center mt-4"></div>
         <div ref="chart" class="flex justify-center items-center"></div>
@@ -34,7 +34,8 @@ export default {
                     united_kingdom: '#8da0cb',
                     south_korea: '#e78ac3',
                     japan: '#a6d854',
-                    germany: '#ffd92f'
+                    germany: '#ffd92f',
+                    bermuda: 'rgba(47,59,134,0.65)'
                 },
                 dark: {
                     france: '#ff7f0e',
@@ -42,21 +43,26 @@ export default {
                     united_kingdom: '#9467bd',
                     south_korea: '#d62728',
                     japan: '#2ca02c',
-                    germany: '#ffbb78'
+                    germany: '#ffbb78',
+                    bermuda: 'rgba(47,59,134,0.65)'
                 }
             },
-            countryData: {}
+            countryData: {},
+            rotation: [0, 0, 0],
+            dragging: false,
+            lastX: 0,
+            lastY: 0
         };
     },
     mounted() {
         this.drawChart();
-        document.title = 'Map Chart';
+        document.title = 'Globe Chart';
         eventBus.on('themeChanged', this.updateChartColor);
     },
     beforeUnmount() {
         eventBus.off('themeChanged', this.updateChartColor);
-        // Clean up legend
         d3.select(this.$refs.legend).selectAll('*').remove();
+        if (this.interval) clearInterval(this.interval);
     },
     methods: {
         drawLegend() {
@@ -81,7 +87,6 @@ export default {
                 .attr('class', 'legend-item')
                 .attr('transform', (d, i) => `translate(${i * legendItemWidth}, 0)`);
 
-            // Add colored rectangles
             legendItems.append('rect')
                 .attr('x', 5)
                 .attr('y', 5)
@@ -89,44 +94,93 @@ export default {
                 .attr('height', 20)
                 .style('fill', (d) => this.colors[this.theme][d.toLowerCase().replaceAll(' ', '_')]);
 
-            // Add country names
             legendItems.append('text')
                 .attr('x', 30)
                 .attr('y', 20)
                 .text(d => {
-                    if (d === 'United States of America') {
-                        return 'USA';
-                    }
-                    else if (d === 'United Kingdom') {
-                        return 'UK';
-                    }
-                    else if (d === 'South Korea') {
-                        return 'Korea';
-                    }
+                    if (d === 'United States of America') return 'USA';
+                    else if (d === 'United Kingdom') return 'UK';
+                    else if (d === 'South Korea') return 'Korea';
                     return d;
                 })
                 .style('font-size', '12px')
-                .attr('fill', function (d) {
-                    let theme = localStorage.getItem('theme') || 'light';
-                    return theme === 'dark' ? 'white' : 'black';
-                });
+                .attr('fill', () => this.theme === 'dark' ? 'white' : 'black');
         },
         drawChart() {
             const width = $('.w-9\\/12').width();
-            const height = width * 0.6;
+            const height = width * 0.8;
+            const sensitivity = 20;
 
-            const countryList = ['South Korea', 'Japan', 'Germany', 'United Kingdom', 'United States of America', 'France', "Canada", "Australia", "Italy", "Spain", "China", "Brazil", "India", "Russia", "Mexico", "Indonesia", "Turkey", "Netherlands", "Saudi Arabia", "Switzerland", "Sweden", "Poland", "Belgium", "Norway", "Austria", "United Arab Emirates", "Denmark", "Singapore", "Malaysia"];
-
-            const _this = this;
+            // Clear existing content
+            d3.select(this.$refs.chart).selectAll('*').remove();
 
             const svg = d3.select(this.$refs.chart)
                 .append('svg')
                 .attr('width', width)
                 .attr('height', height);
 
-            // Load the CSV data
-            d3.csv('/COS30045-Project/data/WHO_CANCER_CASE_LINE_BAR.csv').then((csvData) => {
-                // Calculate total data for each country, male and female
+
+            const projection = d3.geoOrthographic()
+                .scale(Math.min(width, height) / 2.5)
+                .center([0, 0])
+                .translate([width / 2, height / 2]);
+
+            const path = d3.geoPath().projection(projection);
+
+            // Create a tooltip
+            const tooltip = d3.select('body')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('padding', '5px')
+                .style('background', 'rgba(0, 0, 0, 0.7)')
+                .style('color', 'white')
+                .style('border-radius', '5px')
+                .style('visibility', 'hidden');
+
+            const _this = this;
+            const countryList = [
+                "Afghanistan", "Angola", "Albania", "United Arab Emirates", "Argentina",
+                "Armenia", "Antarctica", "French Southern and Antarctic Lands", "Australia",
+                "Austria", "Azerbaijan", "Burundi", "Belgium", "Benin", "Burkina Faso",
+                "Bangladesh", "Bermuda", "Bulgaria", "The Bahamas", "Bosnia and Herzegovina", "Belarus",
+                "Belize", "Bolivia", "Brazil", "Brunei", "Bhutan", "Botswana",
+                "Central African Republic", "Canada", "Switzerland", "Chile", "China",
+                "Ivory Coast", "Cameroon", "Democratic Republic of the Congo",
+                "Republic of the Congo", "Colombia", "Costa Rica", "Cuba", "Northern Cyprus",
+                "Cyprus", "Czech Republic", "Germany", "Djibouti", "Denmark",
+                "Dominican Republic", "Algeria", "Ecuador", "Egypt", "Eritrea", "Spain",
+                "Estonia", "Ethiopia", "Finland", "Fiji", "Falkland Islands", "France",
+                "Gabon", "United Kingdom", "Georgia", "Ghana", "Guinea", "Gambia",
+                "Guinea Bissau", "Equatorial Guinea", "Greece", "Greenland", "Guatemala",
+                "French Guiana", "Guyana", "Honduras", "Croatia", "Haiti", "Hungary",
+                "Indonesia", "India", "Ireland", "Iran", "Iraq", "Iceland", "Israel",
+                "Italy", "Jamaica", "Jordan", "Japan", "Kazakhstan", "Kenya", "Kyrgyzstan",
+                "Cambodia", "South Korea", "Kosovo", "Kuwait", "Laos", "Lebanon", "Liberia",
+                "Libya", "Sri Lanka", "Lesotho", "Lithuania", "Luxembourg", "Latvia",
+                "Morocco", "Moldova", "Madagascar", "Mexico", "Macedonia", "Mali", "Malta",
+                "Myanmar", "Montenegro", "Mongolia", "Mozambique", "Mauritania", "Malawi",
+                "Malaysia", "Namibia", "New Caledonia", "Niger", "Nigeria", "Nicaragua",
+                "Netherlands", "Norway", "Nepal", "New Zealand", "Oman", "Pakistan",
+                "Panama", "Peru", "Philippines", "Papua New Guinea", "Poland", "Puerto Rico",
+                "North Korea", "Portugal", "Paraguay", "Qatar", "Romania", "Russia",
+                "Rwanda", "Western Sahara", "Saudi Arabia", "Sudan", "South Sudan",
+                "Senegal", "Solomon Islands", "Sierra Leone", "Singapore", "El Salvador",
+                "Somaliland", "Somalia", "Republic of Serbia", "Suriname", "Slovakia",
+                "Slovenia", "Sweden", "Swaziland", "Syria", "Chad", "Togo", "Thailand",
+                "Tajikistan", "Turkmenistan", "East Timor", "Trinidad and Tobago",
+                "Tunisia", "Turkey", "Taiwan", "United Republic of Tanzania", "Uganda",
+                "Ukraine", "Uruguay", "United States of America", "Uzbekistan", "Venezuela",
+                "Vietnam", "Vanuatu", "West Bank", "Yemen", "South Africa", "Zambia",
+                "Zimbabwe"
+            ];
+
+            // Load data
+            Promise.all([
+                d3.csv('/COS30045-Project/data/WHO_CANCER_CASE_LINE_BAR.csv'),
+                d3.json('/COS30045-Project/data/geo.json')
+            ]).then(([csvData, worldData]) => {
+                // Process CSV data
                 csvData.forEach((row) => {
                     const country = row['Country label'] === 'USA' ? 'United States of America' : row['Country label'];
                     const sex = row['Sex'].toLowerCase();
@@ -140,107 +194,94 @@ export default {
                     _this.countryData[country][sex] += total;
                 });
 
-                // Load GeoJSON data for the world
-                d3.json('/COS30045-Project/data/geo.json').then((data) => {
-                    if (!data || !data.features) {
-                        console.error('Invalid GeoJSON data');
-                        return;
-                    }
+                // Draw countries
+                const countries = worldData.features.filter((d) => countryList.includes(d.properties.name));
 
-                    const countries = data.features.filter((d) => countryList.includes(d.properties.name));
+                const globe = svg.selectAll('.country')
+                    .data(countries)
+                    .enter()
+                    .append('path')
+                    .attr('class', 'country')
+                    .attr('d', path)
+                    .attr('id', (d) => d.properties.name.toLowerCase().replaceAll(' ', '_'))
+                    .style('fill', (d) => _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] || 'gray')
+                    .style('stroke', _this.theme === 'dark' ? '#444' : '#fff')
+                    .style('stroke-width', '0.5px')
+                    .on('mouseover', function(event, d) {
+                        let validCountry = ["KOR", "JPN", "DEU", "GBR", "USA", "FRA"];
+                        if (!validCountry.includes(d.id)) return;
 
-                    if (countries.length === 0) {
-                        console.error('No data found for the selected countries');
-                        return;
-                    }
-
-                    const projection = d3.geoMercator().fitSize([width, height], {
-                        type: 'FeatureCollection',
-                        features: countries
-                    });
-                    const path = d3.geoPath().projection(projection);
-
-                    // Tooltip for displaying data
-                    const tooltip = d3.select('body')
-                        .append('div')
-                        .attr('class', 'tooltip')
-                        .style('position', 'absolute')
-                        .style('padding', '5px')
-                        .style('background', 'rgba(0, 0, 0, 0.7)')
-                        .style('color', 'white')
-                        .style('border-radius', '5px')
-                        .style('visibility', 'hidden');
-
-                    // Draw the countries
-                    svg.selectAll('.country')
-                        .data(countries)
-                        .enter()
-                        .append('path')
-                        .attr('class', 'country')
-                        .attr('d', path)
-                        .attr('id', (d) => d.properties.name.toLowerCase().replaceAll(' ', '_'))
-                        .style('fill', (d) => _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] ? _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] : 'gray')
-                        .on('mouseover', function (event, d) {
-                            let validCountry = ["KOR", "JPN", "DEU", "GBR", "USA", "FRA"];
-                            if (!validCountry.includes(d.id)) {
-                                return;
-                            }
-
-                            d3.select(this).style('fill', function (d) {
-                                return d3.rgb(d3.select(this).style('fill')).darker(0.9);
-                            });
-
-                            /*if (validCountry.includes(d.id)) {
-                                d3.select(this).style('fill', function (d) {
-                                    return d3.rgb(d3.select(this).style('fill')).darker(0.9);
-                                });
-                            }*/
-
-                            // Show tooltip with total, male, and female data
-                            const countryName = d.properties.name;
-                            const countryInfo = _this.countryData[countryName];
-                            const tooltipText = `
-                                              <strong>${countryName}</strong><br>
-                                              Total: ${countryInfo?.total || 'No data'}<br>
-                                              Male: ${countryInfo?.male || 'No data'}<br>
-                                              Female: ${countryInfo?.female || 'No data'}
-                                            `;
-
-                            tooltip
-                                .style('visibility', 'visible')
-                                .html(tooltipText);
-                        })
-                        .on('mousemove', (event) => {
-                            tooltip
-                                .style('top', event.pageY + 10 + 'px')
-                                .style('left', event.pageX + 10 + 'px');
-                        })
-                        .on('mouseout', function (event, d) {
-                            const color = _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')];
-                            d3.select(this).style('fill', (d) => _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] ? _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] : 'gray')
-                            tooltip.style('visibility', 'hidden');
+                        d3.select(this).style('fill', function(d) {
+                            return d3.rgb(d3.select(this).style('fill')).darker(0.9);
                         });
 
-                    // Draw the legend after the map is complete
-                    _this.drawLegend();
-                }).catch((error) => {
-                    alert('Error loading the GeoJSON data: ' + error);
-                });
-            }).catch((error) => {
-                alert('Error loading the CSV data: ' + error);
+                        const countryName = d.properties.name;
+                        const countryInfo = _this.countryData[countryName];
+                        const tooltipText = `
+                            <strong>${countryName}</strong><br>
+                            Total: ${countryInfo?.total || 'No data'}<br>
+                            Male: ${countryInfo?.male || 'No data'}<br>
+                            Female: ${countryInfo?.female || 'No data'}
+                        `;
+
+                        tooltip
+                            .style('visibility', 'visible')
+                            .html(tooltipText);
+                    })
+                    .on('mousemove', (event) => {
+                        tooltip
+                            .style('top', event.pageY + 10 + 'px')
+                            .style('left', event.pageX + 10 + 'px');
+                    })
+                    .on('mouseout', function(event, d) {
+                        d3.select(this).style('fill', (d) =>
+                            _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] || 'gray'
+                        );
+                        tooltip.style('visibility', 'hidden');
+                    });
+
+                // Add rotation interaction
+                svg.call(d3.drag()
+                    .on('start', () => {
+                        _this.dragging = true;
+                        if (_this.interval) clearInterval(_this.interval);
+                    })
+                    .on('drag', (event) => {
+                        const rotate = projection.rotate();
+                        projection.rotate([
+                            rotate[0] + event.dx / sensitivity,
+                            rotate[1] - event.dy / sensitivity
+                        ]);
+                        svg.selectAll('path').attr('d', path);
+                    })
+                    .on('end', () => {
+                        _this.dragging = false;
+                        _this.startRotation(projection, svg, path);
+                    }));
+
+                // Start automatic rotation
+                this.startRotation(projection, svg, path);
+
+                // Draw the legend
+                _this.drawLegend();
+            }).catch(error => {
+                console.error('Error loading data:', error);
             });
         },
+        startRotation(projection, svg, path) {
+            if (this.interval) clearInterval(this.interval);
+
+            this.interval = setInterval(() => {
+                if (!this.dragging) {
+                    const rotate = projection.rotate();
+                    projection.rotate([rotate[0] + 0.2, rotate[1]]);
+                    svg.selectAll('path').attr('d', path);
+                }
+            }, 50);
+        },
         updateChartColor() {
-            const _this = this;
-
-            let theme = localStorage.getItem('theme') || 'light';
-            this.theme = theme;
-            d3.selectAll('.country').style('fill', (d) => {
-                return _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] ? _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] : 'gray';
-            });
-
-            // Update legend colors when theme changes
-            this.drawLegend();
+            this.theme = localStorage.getItem('theme') || 'light';
+            this.drawChart();
         }
     }
 };
@@ -251,5 +292,14 @@ export default {
     position: absolute;
     pointer-events: none;
     opacity: 0.8;
+    z-index: 1000;
+}
+
+.ocean {
+    transition: fill 0.3s ease;
+}
+
+.country {
+    transition: fill 0.3s ease;
 }
 </style>

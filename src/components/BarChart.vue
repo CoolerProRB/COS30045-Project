@@ -231,7 +231,6 @@ export default{
                         .style("border-radius", "4px")
                         .style("pointer-events", "none");
 
-
                     bars.transition()
                         .duration(500)
                         .attr("x", d => x(d.name))

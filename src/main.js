@@ -3,7 +3,6 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 
 import App from './App.vue'
 import Home from './components/Home.vue'
-import RacingChart from "@/components/RacingChart.vue";
 import './assets/index.css'
 
 const routes = [

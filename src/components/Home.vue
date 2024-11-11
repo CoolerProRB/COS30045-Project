@@ -48,10 +48,8 @@
 <script>
 import MapChart from "@/components/MapChart.vue";
 import LineChart from "@/components/LineChart.vue";
-import Heatmap from "@/components/Heatmap.vue";
 import BarChart from "@/components/BarChart.vue";
 import StackedBarChart from "@/components/StackedBarChart.vue";
-import ScatterPlot from "@/components/ScatterPlot.vue";
 import RacingChart from "@/components/RacingChart.vue";
 
 export default {
@@ -59,7 +57,6 @@ export default {
     components: {
         MapChart,
         LineChart,
-        ScatterPlot,
         BarChart,
         StackedBarChart,
         RacingChart
