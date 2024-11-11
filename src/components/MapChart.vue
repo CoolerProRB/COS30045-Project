@@ -44,7 +44,7 @@ export default {
                     south_korea: '#d62728',
                     japan: '#2ca02c',
                     germany: '#ffbb78',
-                    bermuda: 'rgba(47,59,134,0.65)'
+                    bermuda: 'rgb(47,59,134)'
                 }
             },
             countryData: {},
