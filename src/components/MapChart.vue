@@ -56,7 +56,6 @@ export default {
     },
     mounted() {
         this.drawChart();
-        document.title = 'Globe Chart';
         eventBus.on('themeChanged', this.updateChartColor);
     },
     beforeUnmount() {
@@ -107,27 +106,30 @@ export default {
                 .attr('fill', () => this.theme === 'dark' ? 'white' : 'black');
         },
         drawChart() {
+            // Define the width and height for the SVG element based on the container width and maintain an aspect ratio
             const width = $('.w-9\\/12').width();
             const height = width * 0.8;
-            const sensitivity = 20;
+            const sensitivity = 20; // Sensitivity for dragging the globe (how much to move per drag)
 
-            // Clear existing content
+            // Clear any existing SVG elements to prevent duplicates when re-drawing the chart
             d3.select(this.$refs.chart).selectAll('*').remove();
 
+            // Create an SVG element with the calculated width and height
             const svg = d3.select(this.$refs.chart)
                 .append('svg')
                 .attr('width', width)
                 .attr('height', height);
 
-
+            // Set up an orthographic (globe-like) projection for the map
             const projection = d3.geoOrthographic()
-                .scale(Math.min(width, height) / 2.5)
-                .center([0, 0])
-                .translate([width / 2, height / 2]);
+                .scale(Math.min(width, height) / 2.5) // Set scale based on width and height
+                .center([0, 0]) // Set the center point for the projection
+                .translate([width / 2, height / 2]); // Translate to the center of the SVG
 
+            // Create a path generator for the geographic data based on the projection
             const path = d3.geoPath().projection(projection);
 
-            // Create a tooltip
+            // Create a tooltip for displaying country-specific data on hover
             const tooltip = d3.select('body')
                 .append('div')
                 .attr('class', 'tooltip')
@@ -136,9 +138,11 @@ export default {
                 .style('background', 'rgba(0, 0, 0, 0.7)')
                 .style('color', 'white')
                 .style('border-radius', '5px')
-                .style('visibility', 'hidden');
+                .style('visibility', 'hidden'); // Hide tooltip initially
 
-            const _this = this;
+            const _this = this; // Reference to `this` for use inside callbacks
+
+            // Define a list of countries to be displayed on the map
             const countryList = [
                 "Afghanistan", "Angola", "Albania", "United Arab Emirates", "Argentina",
                 "Armenia", "Antarctica", "French Southern and Antarctic Lands", "Australia",
@@ -175,107 +179,119 @@ export default {
                 "Zimbabwe"
             ];
 
-            // Load data
+            // Load the CSV and GeoJSON data
             Promise.all([
                 d3.csv('/COS30045-Project/data/WHO_CANCER_CASE_LINE_BAR.csv'),
                 d3.json('/COS30045-Project/data/geo.json')
             ]).then(([csvData, worldData]) => {
-                // Process CSV data
+                // Process the CSV data and map it to the countries
                 csvData.forEach((row) => {
+                    // Normalize the country names between the dataset and GeoJSON
                     const country = row['Country label'] === 'USA' ? 'United States of America' : row['Country label'];
-                    const sex = row['Sex'].toLowerCase();
+                    const sex = row['Sex'].toLowerCase(); // Convert gender to lowercase for consistency
 
+                    // Initialize country data if not already present
                     if (!_this.countryData[country]) {
-                        _this.countryData[country] = {total: 0, male: 0, female: 0};
+                        _this.countryData[country] = { total: 0, male: 0, female: 0 };
                     }
 
+                    // Update total, male, and female counts for the country
                     const total = parseInt(row.Total);
                     _this.countryData[country].total += total;
                     _this.countryData[country][sex] += total;
                 });
 
-                // Draw countries
+                // Filter the world map data to only include the selected countries
                 const countries = worldData.features.filter((d) => countryList.includes(d.properties.name));
 
+                // Draw the countries on the SVG
                 const globe = svg.selectAll('.country')
                     .data(countries)
                     .enter()
                     .append('path')
                     .attr('class', 'country')
-                    .attr('d', path)
-                    .attr('id', (d) => d.properties.name.toLowerCase().replaceAll(' ', '_'))
-                    .style('fill', (d) => _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] || 'gray')
-                    .style('stroke', _this.theme === 'dark' ? '#444' : '#fff')
-                    .style('stroke-width', '0.5px')
+                    .attr('d', path) // Use the geoPath generator for country shapes
+                    .attr('id', (d) => d.properties.name.toLowerCase().replaceAll(' ', '_')) // Assign a unique ID to each country
+                    .style('fill', (d) => _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] || 'gray') // Set fill color based on theme
+                    .style('stroke', _this.theme === 'dark' ? '#444' : '#fff') // Adjust stroke color based on theme
+                    .style('stroke-width', '0.5px') // Set the width of the country borders
                     .on('mouseover', function(event, d) {
+                        // Highlight the country on mouseover and show tooltip if it's in the valid list
                         let validCountry = ["KOR", "JPN", "DEU", "GBR", "USA", "FRA"];
                         if (!validCountry.includes(d.id)) return;
 
                         d3.select(this).style('fill', function(d) {
-                            return d3.rgb(d3.select(this).style('fill')).darker(0.9);
+                            return d3.rgb(d3.select(this).style('fill')).darker(0.9); // Darken the country fill color
                         });
 
+                        // Get country name and data to display in tooltip
                         const countryName = d.properties.name;
                         const countryInfo = _this.countryData[countryName];
                         const tooltipText = `
-                            <strong>${countryName}</strong><br>
-                            Total: ${countryInfo?.total || 'No data'}<br>
-                            Male: ${countryInfo?.male || 'No data'}<br>
-                            Female: ${countryInfo?.female || 'No data'}
-                        `;
+                    <strong>${countryName}</strong><br>
+                    Total: ${countryInfo?.total || 'No data'}<br>
+                    Male: ${countryInfo?.male || 'No data'}<br>
+                    Female: ${countryInfo?.female || 'No data'}
+                `;
 
                         tooltip
-                            .style('visibility', 'visible')
+                            .style('visibility', 'visible') // Make the tooltip visible
                             .html(tooltipText);
                     })
                     .on('mousemove', (event) => {
+                        // Move the tooltip with the mouse
                         tooltip
                             .style('top', event.pageY + 10 + 'px')
                             .style('left', event.pageX + 10 + 'px');
                     })
                     .on('mouseout', function(event, d) {
+                        // Reset country fill color on mouseout and hide the tooltip
                         d3.select(this).style('fill', (d) =>
                             _this.colors[_this.theme][d.properties.name.toLowerCase().replaceAll(' ', '_')] || 'gray'
                         );
                         tooltip.style('visibility', 'hidden');
                     });
 
-                // Add rotation interaction
+                // Add drag interaction to rotate the globe
                 svg.call(d3.drag()
                     .on('start', () => {
-                        _this.dragging = true;
-                        if (_this.interval) clearInterval(_this.interval);
+                        _this.dragging = true; // Set dragging state to true
+                        if (_this.interval) clearInterval(_this.interval); // Stop the auto-rotation during drag
                     })
                     .on('drag', (event) => {
+                        // Update the projection's rotation based on drag movement
                         const rotate = projection.rotate();
                         projection.rotate([
                             rotate[0] + event.dx / sensitivity,
                             rotate[1] - event.dy / sensitivity
                         ]);
-                        svg.selectAll('path').attr('d', path);
+                        svg.selectAll('path').attr('d', path); // Re-draw the paths
                     })
                     .on('end', () => {
+                        // Restart auto-rotation when drag ends
                         _this.dragging = false;
                         _this.startRotation(projection, svg, path);
                     }));
 
-                // Start automatic rotation
+                // Start automatic rotation of the globe
                 this.startRotation(projection, svg, path);
 
-                // Draw the legend
+                // Draw the legend for the chart
                 _this.drawLegend();
             }).catch(error => {
+                // Handle data loading errors
                 console.error('Error loading data:', error);
             });
         },
-        startRotation(projection, svg, path) {
-            if (this.interval) clearInterval(this.interval);
+        startRotation(projection, svg, path) { // Function to start automatic rotation of the globe
+            if (this.interval) clearInterval(this.interval); // Clear existing rotation interval
 
+            // Set an interval to rotate the globe slowly every 50 milliseconds
             this.interval = setInterval(() => {
-                if (!this.dragging) {
+                if (!this.dragging) { // Only rotate if not dragging
                     const rotate = projection.rotate();
-                    projection.rotate([rotate[0] + 0.2, rotate[1]]);
-                    svg.selectAll('path').attr('d', path);
+                    projection.rotate([rotate[0] + 0.2, rotate[1]]); // Update rotation angle
+                    svg.selectAll('path').attr('d', path); // Re-draw paths to reflect the new rotation
                 }
             }, 50);
         },

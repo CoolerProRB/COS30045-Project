@@ -62,7 +62,7 @@ export default {
         RacingChart
     },
     mounted() {
-        document.title = 'Home';
+        document.title = 'Analysis of Respiratory Cancer';
     }
 };
 </script>

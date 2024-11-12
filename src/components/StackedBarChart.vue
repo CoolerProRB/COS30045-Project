@@ -54,170 +54,172 @@ export default {
     },
     methods: {
         drawChart(selectedSex) {
+            // Clear any existing chart content
             d3.select(this.$refs.chart).selectAll("*").remove();
 
             // Set the dimensions and margins of the graph
             const margin = { top: 10, right: 30, bottom: 60, left: 60 },
-                width = $(".w-9\\/12").width() - margin.left - margin.right,
-                height = 400 - margin.top - margin.bottom;
+                width = $(".w-9\\/12").width() - margin.left - margin.right, // Set chart width based on container width minus margins
+                height = 400 - margin.top - margin.bottom; // Set chart height minus margins
 
-            // Append the SVG object to the body of the page
-            const svg = d3.select(this.$refs.chart)
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left}, ${margin.top})`);
+            // Append the SVG object to the chart container
+            const svg = d3.select(this.$refs.chart) // Select container where chart will be placed
+                .append("svg") // Append an SVG element
+                .attr("width", width + margin.left + margin.right) // Set total SVG width including margins
+                .attr("height", height + margin.top + margin.bottom) // Set total SVG height including margins
+                .append("g") // Append a group element for applying margins
+                .attr("transform", `translate(${margin.left}, ${margin.top})`); // Translate group element to respect margins
 
-            // Create a tooltip div
-            const tooltip = d3.select(this.$refs.chart)
-                .append("div")
-                .attr("id", "tooltip")
-                .style("position", "absolute")
-                .style("opacity", 0)
-                .attr("class", "bg-gray-100 dark:bg-gray-700")
-                .style("border", "1px solid #ccc")
-                .style("padding", "5px")
-                .style("pointer-events", "none")
-                .style("border-radius", "3px");
+            // Create a tooltip div for showing data on hover
+            const tooltip = d3.select(this.$refs.chart) // Select the chart container
+                .append("div") // Append a div for the tooltip
+                .attr("id", "tooltip") // Set the tooltip ID
+                .style("position", "absolute") // Set tooltip position to absolute
+                .style("opacity", 0) // Initially hide tooltip
+                .attr("class", "bg-gray-100 dark:bg-gray-700") // Add classes for tooltip styling
+                .style("border", "1px solid #ccc") // Add a border for the tooltip
+                .style("padding", "5px") // Add padding inside the tooltip
+                .style("pointer-events", "none") // Disable pointer events to avoid conflicts during mouse movements
+                .style("border-radius", "3px"); // Add rounded corners to the tooltip
 
-            // Read the data
+            // Read the CSV data
             d3.csv("data/OECD_CANCER_STACKED_BAR.csv").then(function (data) {
                 // Convert numeric values and clean country names
                 data.forEach(function (d) {
-                    d.OBS_VALUE = +d.OBS_VALUE;
-                    d.TIME_PERIOD = +d.TIME_PERIOD;
-                    d["Reference area"] = d["Reference area"].trim(); // Remove extra spaces
+                    d.OBS_VALUE = +d.OBS_VALUE; // Convert 'OBS_VALUE' to a number
+                    d.TIME_PERIOD = +d.TIME_PERIOD; // Convert 'TIME_PERIOD' to a number
+                    d["Reference area"] = d["Reference area"].trim(); // Remove extra spaces from 'Reference area'
                 });
 
-                // Filter the data for the desired years and sexes
+                // Filter the data for the desired years and the selected gender
                 data = data.filter(function (d) {
-                    return [2000, 2002, 2008, 2012].includes(d.TIME_PERIOD) && d.Sex === selectedSex;
+                    return [2000, 2002, 2008, 2012].includes(d.TIME_PERIOD) && d.Sex === selectedSex; // Filter by specific years and selected gender
                 });
 
-                // Update mygroups to match the country names in your data
-                const mygroups = ["United Kingdom", "United States", "France", "Germany", "Korea", "Japan"];
+                // Update the country names for grouping
+                const mygroups = ["United Kingdom", "United States", "France", "Germany", "Korea", "Japan"]; // List of countries to be included
 
-                // Get the list of years (as strings)
+                // Get the list of years (as strings) for stacking
                 const mysubgroups = ["2000", "2002", "2008", "2012"];
 
-                // Prepare the data for stacking
+                // Prepare the data for stacking by country and year
                 const dataByCountry = d3.rollups(
                     data,
                     v => {
                         let obj = {};
                         mysubgroups.forEach(year => {
-                            const yearData = v.find(d => d.TIME_PERIOD === +year);
-                            obj[year] = yearData ? yearData.OBS_VALUE : 0;
+                            const yearData = v.find(d => d.TIME_PERIOD === +year); // Find data for each year
+                            obj[year] = yearData ? yearData.OBS_VALUE : 0; // Assign value or set to 0 if not found
                         });
-                        return obj;
+                        return obj; // Return object with values for each year
                     },
-                    d => d["Reference area"] // Use exact country names
+                    d => d["Reference area"] // Group by country name
                 );
 
-                // Map and filter the dataset
+                // Map the grouped data into the correct dataset format for stacking
                 const dataset = dataByCountry.map(([country, values]) => {
-                    return { country: country, ...values };
+                    return { country: country, ...values }; // Create an object for each country with its values
                 });
 
-                // Filter dataset to include only the countries in mygroups
+                // Filter dataset to include only the specified countries
                 const filteredDataset = dataset.filter(d => mygroups.includes(d.country));
 
-                // Stack the data
+                // Stack the data for each year
                 const stackedData = d3.stack()
-                    .keys(mysubgroups)
+                    .keys(mysubgroups) // Stack by years
                     (filteredDataset);
 
-                // Add X axis (countries)
+                // Add X axis for countries
                 const x = d3.scaleBand()
-                    .domain(mygroups)
-                    .range([0, width])
-                    .padding(0.2);
+                    .domain(mygroups) // Set domain to country names
+                    .range([0, width]) // Set range from left to right
+                    .padding(0.2); // Add padding between bars
 
                 svg.append("g")
-                    .attr("transform", `translate(0, ${height})`)
-                    .call(d3.axisBottom(x).tickSize(0))
+                    .attr("transform", `translate(0, ${height})`) // Position x-axis at the bottom of the chart
+                    .call(d3.axisBottom(x).tickSize(0)) // Draw the x-axis
                     .selectAll("text")
-                    .attr("dy", "1em");
+                    .attr("dy", "1em"); // Adjust y position of the labels
 
                 // Add x-axis label
                 svg.append("text")
-                    .attr("class", "label")
+                    .attr("class", "label") // Add a class for styling
                     .attr("text-anchor", "middle")
                     .attr("fill", function () {
-                        return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
+                        return localStorage.getItem('theme') === 'dark' ? 'white' : 'black'; // Set label color based on theme
                     })
-                    .attr("x", width / 2)
-                    .attr("y", height + margin.bottom - 20) // Adjust '-20' as needed
-                    .text("Cancer Cases per 100000 persons by Gender");
+                    .attr("x", width / 2) // Center the label horizontally
+                    .attr("y", height + margin.bottom - 20) // Position the label below the x-axis
+                    .text("Cancer Cases per 100000 persons by Gender"); // Set label text
 
-
-                // Add Y axis
-                const yMax = d3.max(stackedData[stackedData.length - 1], d => d[1]);
+                // Add Y axis for values
+                const yMax = d3.max(stackedData[stackedData.length - 1], d => d[1]); // Get maximum value across stacked data
                 const y = d3.scaleLinear()
-                    .domain([0, yMax])
-                    .range([height, 0]);
+                    .domain([0, yMax]) // Set domain from 0 to the maximum value
+                    .range([height, 0]); // Invert range (SVG y-axis starts from the top)
 
                 svg.append("g")
-                    .call(d3.axisLeft(y));
+                    .call(d3.axisLeft(y)); // Draw the y-axis on the left
 
-
-                // Define the color palette
+                // Define the color palette for the bars
                 const color = d3.scaleOrdinal()
-                    .domain(mysubgroups)
-                    .range(d3.schemeTableau10);
+                    .domain(mysubgroups) // Set domain to the list of years
+                    .range(d3.schemeTableau10); // Use Tableau color scheme for distinct colors
 
-                // Show the bars with transition
+                // Group bars for each year's data and apply transitions for a smooth update
                 const barsGroup = svg.append("g");
 
                 function updateBars() {
-                    // Bind data to groups and enter new groups
+                    // Bind the stacked data to groups and enter new groups
                     const groups = barsGroup.selectAll("g")
                         .data(stackedData);
 
+                    // Enter new groups and set fill color for each year
                     const groupsEnter = groups.enter().append("g")
-                        .attr("fill", function(d) { return color(d.key); });
+                        .attr("fill", function (d) { return color(d.key); });
 
+                    // Append rect elements for each bar within the groups
                     groupsEnter.selectAll("rect")
-                        .data(function(d) { return d; })
+                        .data(function (d) { return d; }) // Bind data for each year
                         .enter().append("rect")
-                        .attr("x", function(d) { return x(d.data.country); })
-                        .attr("y", height) // Start from bottom for transition effect
+                        .attr("x", function (d) { return x(d.data.country); }) // Set x position based on country
+                        .attr("y", height) // Start from the bottom for transition effect
                         .attr("height", 0) // Start with height 0 for transition effect
-                        .attr("width", x.bandwidth())
-                        .on("mouseover", function(event, d) {
-                            tooltip.style("opacity", 0.9);
-                            d3.select(this).style("stroke", function () {
+                        .attr("width", x.bandwidth()) // Set bar width
+                        .on("mouseover", function (event, d) { // Tooltip on mouseover
+                            tooltip.style("opacity", 0.9); // Make tooltip visible
+                            d3.select(this).style("stroke", function () { // Highlight bar with stroke
                                 return localStorage.getItem('theme') === 'dark' ? 'white' : 'black';
                             });
                         })
-                        .on("mousemove", function(event, d) {
-                            const country = d.data.country;
-                            const year = d3.select(this.parentNode).datum().key;
-                            const value = d.data[year];
+                        .on("mousemove", function (event, d) { // Update tooltip position and content on mousemove
+                            const country = d.data.country; // Get country name
+                            const year = d3.select(this.parentNode).datum().key; // Get year from parent group
+                            const value = d.data[year]; // Get value for the year
 
                             tooltip.html(`<strong>Country:</strong> ${country}<br>
                        <strong>Year:</strong> ${year}<br>
-                       <strong>Value:</strong> ${value}`)
-                                .style("left", (event.pageX + 10) + "px")
-                                .style("top", (event.pageY - 28) + "px");
+                       <strong>Value:</strong> ${value}`) // Set tooltip content
+                                .style("left", (event.pageX + 10) + "px") // Set tooltip x position
+                                .style("top", (event.pageY - 28) + "px"); // Set tooltip y position
                         })
-                        .on("mouseout", function() {
+                        .on("mouseout", function () { // Hide tooltip on mouseout
                             tooltip.style("opacity", 0);
-                            d3.select(this).style("stroke", "none");
+                            d3.select(this).style("stroke", "none"); // Remove bar stroke
                         });
 
                     // Update existing bars with transition
                     groupsEnter.merge(groups).selectAll("rect")
-                        .transition()
-                        .duration(750)
-                        .attr("y", function(d) { return y(d[1]); })
-                        .attr("height", function(d) { return y(d[0]) - y(d[1]); });
+                        .transition() // Apply transition for smooth changes
+                        .duration(750) // Set transition duration in milliseconds
+                        .attr("y", function (d) { return y(d[1]); }) // Set y position based on value
+                        .attr("height", function (d) { return y(d[0]) - y(d[1]); }); // Calculate bar height from the stack values
 
                     // Remove old bars that are no longer needed
-                    groups.exit().remove();
+                    groups.exit().remove(); // Remove groups not present in new data
                 }
 
+                // Call the function to update bars
                 updateBars();
             });
         },
