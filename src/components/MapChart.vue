@@ -35,7 +35,7 @@ export default {
                     south_korea: '#e78ac3',
                     japan: '#a6d854',
                     germany: '#ffd92f',
-                    bermuda: 'rgba(47,59,134,0.65)'
+                    bermuda: 'rgba(47,59,134)'
                 },
                 dark: {
                     france: '#ff7f0e',
@@ -44,7 +44,7 @@ export default {
                     south_korea: '#d62728',
                     japan: '#2ca02c',
                     germany: '#ffbb78',
-                    bermuda: 'rgb(47,59,134)'
+                    bermuda: 'rgba(47,59,134,0.7)'
                 }
             },
             countryData: {},
@@ -120,6 +120,13 @@ export default {
                 .attr('width', width)
                 .attr('height', height);
 
+            svg.append('circle')
+                .attr('cx', width / 2)
+                .attr('cy', height / 2)
+                .attr('r', Math.min(width, height) / 2.5)
+                .attr('class', 'ocean')
+                .style('fill', '#1f5091');
+
             // Set up an orthographic (globe-like) projection for the map
             const projection = d3.geoOrthographic()
                 .scale(Math.min(width, height) / 2.5) // Set scale based on width and height
@@ -147,7 +154,7 @@ export default {
                 "Afghanistan", "Angola", "Albania", "United Arab Emirates", "Argentina",
                 "Armenia", "Antarctica", "French Southern and Antarctic Lands", "Australia",
                 "Austria", "Azerbaijan", "Burundi", "Belgium", "Benin", "Burkina Faso",
-                "Bangladesh", "Bermuda", "Bulgaria", "The Bahamas", "Bosnia and Herzegovina", "Belarus",
+                "Bangladesh", "Bulgaria", "The Bahamas", "Bosnia and Herzegovina", "Belarus",
                 "Belize", "Bolivia", "Brazil", "Brunei", "Bhutan", "Botswana",
                 "Central African Republic", "Canada", "Switzerland", "Chile", "China",
                 "Ivory Coast", "Cameroon", "Democratic Republic of the Congo",
